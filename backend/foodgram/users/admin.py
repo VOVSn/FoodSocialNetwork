@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import CustomUser, Subscription
+from .models import FoodgramUser, Subscription
 from recipes.models import Favorite, ShoppingList
 
 
@@ -37,7 +37,7 @@ class SubscriptionAsAuthorInline(admin.TabularInline):
     fk_name = 'author'
 
 
-@admin.register(CustomUser)
+@admin.register(FoodgramUser)
 class CustomUserAdmin(UserAdmin):
     list_display = (
         'username', 'first_name', 'last_name', 'email', 'avatar'

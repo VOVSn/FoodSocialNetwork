@@ -2,10 +2,8 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth import get_user_model
 
-User = get_user_model()
 
-
-class CustomUser(AbstractUser):
+class FoodgramUser(AbstractUser):
     first_name = models.CharField(
         max_length=150,
         verbose_name='Имя',
@@ -34,14 +32,14 @@ class CustomUser(AbstractUser):
 
 class Subscription(models.Model):
     subscriber = models.ForeignKey(
-        User,
+        'users.FoodgramUser',
         on_delete=models.CASCADE,
         related_name='subscriptions',
         verbose_name='Подписчик',
         help_text='Пользователь, подписывающийся на автора'
     )
     author = models.ForeignKey(
-        User,
+        'users.FoodgramUser',
         on_delete=models.CASCADE,
         related_name='subscribers',
         verbose_name='Автор',
@@ -54,8 +52,8 @@ class Subscription(models.Model):
                 fields=['subscriber', 'author'], name='unique_subscription'
             )
         ]
-    verbose_name = 'Подписка'
-    verbose_name_plural = 'Подписки'
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
 
     def __str__(self):
         return f'{self.subscriber.username} -> {self.author.username}'
