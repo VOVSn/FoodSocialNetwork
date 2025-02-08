@@ -1,4 +1,5 @@
 import os
+
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils.crypto import get_random_string
@@ -110,7 +111,11 @@ class Recipe(models.Model):
     def save(self, *args, **kwargs):
         if not self.short_link:
             domain = os.getenv('DOMAIN', 'https://example.com')
-            self.short_link = f'{domain}/s/{get_random_string(6)}'
+            while True:
+                candidate = f'{domain}/s/{get_random_string(3)}'
+                if not Recipe.objects.filter(short_link=candidate).exists():
+                    self.short_link = candidate
+                    break
         super().save(*args, **kwargs)
 
 
@@ -177,22 +182,22 @@ class ShoppingList(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='shopping_cart',
+        related_name='shopping_list',
         verbose_name='Пользователь',
         help_text='Пользователь, который добавил рецепт в список покупок'
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='shopping_cart',
+        related_name='shopping_list',
         verbose_name='Рецепт',
         help_text='Рецепт, который добавлен в список покупок'
     )
 
     class Meta:
         unique_together = ('user', 'recipe')
-        verbose_name = 'Рецепт в списке покупок'
-        verbose_name_plural = 'Рецепты в списке покупок'
+        verbose_name = 'Список покупок'
+        verbose_name_plural = 'Списки покупок'
 
     def __str__(self):
         return (
