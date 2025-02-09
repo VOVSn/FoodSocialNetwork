@@ -3,6 +3,10 @@ import os
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils.crypto import get_random_string
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 
 User = get_user_model()

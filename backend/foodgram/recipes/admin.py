@@ -56,6 +56,7 @@ class IngredientAdmin(admin.ModelAdmin):
 class RecipeAdmin(admin.ModelAdmin):
     readonly_fields = ('short_link',)
     list_display = ('id', 'name', 'author', 'time_to_cook', 'short_link')
+    list_display_links = ('name', 'short_link')
     search_fields = ('name', 'author__username')
     list_filter = ('author', 'tags')
     ordering = ('name',)
