@@ -79,6 +79,59 @@ class SubscriptionSerializer(UserSerializer):
         return obj.recipes.count()
 
 
+class UserCreateSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=True,
+                                     help_text='Пароль')
+
+    class Meta:
+        model = User
+        fields = (
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'password',
+            'avatar',
+        )
+        extra_kwargs = {
+            'email': {
+                'help_text': 'Адрес электронной почты'
+            },
+            'username': {
+                'help_text': 'Уникальный юзернейм'
+            },
+            'first_name': {
+                'help_text': 'Имя'
+            },
+            'last_name': {
+                'help_text': 'Фамилия'
+            },
+        }
+
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        user = User(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
+
+
+class UserAvatarSerializer(serializers.ModelSerializer):
+    avatar = Base64ImageField(required=True)
+
+    class Meta:
+        model = User
+        fields = ('avatar',)
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    current_password = serializers.CharField(write_only=True, required=True,
+                                             help_text='Текущий пароль')
+    new_password = serializers.CharField(write_only=True, required=True,
+                                         help_text='Новый пароль')
+
+
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
@@ -124,10 +177,8 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     is_in_shopping_cart = serializers.SerializerMethodField()
     image = serializers.ImageField(source='pic', read_only=True)
     text = serializers.CharField(source='description', read_only=True)
-    cooking_time = serializers.IntegerField(
-        source='time_to_cook',
-        read_only=True
-    )
+    cooking_time = serializers.IntegerField(source='time_to_cook',
+                                            read_only=True)
 
     class Meta:
         model = Recipe

@@ -5,33 +5,89 @@ from django.shortcuts import get_object_or_404
 
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import (
-    IsAuthenticated, SAFE_METHODS, BasePermission
-)
+from rest_framework.permissions import IsAuthenticated, SAFE_METHODS
 from rest_framework.response import Response
 
+from permissions import IsAuthorOrReadOnly
 from recipes.models import (
     Tag, Ingredient, Recipe, Favorite, ShoppingList, RecipeIngredient
 )
-from users.models import Subscription
-from .serializers import (
-    UserSerializer, SubscriptionSerializer, TagSerializer,
+from serializers import (
+    UserSerializer, SubscriptionSerializer, UserCreateSerializer,
+    UserAvatarSerializer, PasswordChangeSerializer, TagSerializer,
     IngredientSerializer, RecipeWriteSerializer, RecipeReadSerializer
 )
-
+from users.models import Subscription
 
 User = get_user_model()
 
 
-class UserViewSet(viewsets.ReadOnlyModelViewSet):
+class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return UserCreateSerializer
+        return UserSerializer
 
     @action(
         detail=False,
         methods=['get'],
         permission_classes=[IsAuthenticated],
-        url_path='subscriptions'
+        url_path='me'
+    )
+    def me(self, request):
+        serializer = self.get_serializer(request.user)
+        return Response(serializer.data)
+
+    @action(
+        detail=False,
+        methods=['put', 'delete'],
+        permission_classes=[IsAuthenticated],
+        url_path='me/avatar'
+    )
+    def avatar(self, request):
+        user = request.user
+        if request.method == 'PUT':
+            serializer = UserAvatarSerializer(instance=user,
+                                              data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
+        elif request.method == 'DELETE':
+            if user.avatar:
+                user.avatar.delete(save=False)
+            user.avatar = None
+            user.save(update_fields=['avatar'])
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(
+        detail=False,
+        methods=['post'],
+        permission_classes=[IsAuthenticated],
+        url_path='set_password'
+    )
+    def set_password(self, request):
+        serializer = PasswordChangeSerializer(data=request.data,
+                                              context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        user = request.user
+        current_password = serializer.validated_data.get('current_password')
+        if not user.check_password(current_password):
+            return Response(
+                {'current_password': ['Неверный текущий пароль.']},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        new_password = serializer.validated_data.get('new_password')
+        user.set_password(new_password)
+        user.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(
+        detail=False,
+        methods=['get'],
+        url_path='subscriptions',
+        permission_classes=[IsAuthenticated]
     )
     def subscriptions(self, request):
         user = request.user
@@ -104,13 +160,6 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
         return queryset
 
 
-class IsAuthorOrReadOnly(BasePermission):
-    def has_object_permission(self, request, view, obj):
-        if request.method in SAFE_METHODS:
-            return True
-        return obj.author == request.user
-
-
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
 
@@ -154,7 +203,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_link(self, request, pk=None):
         recipe = self.get_object()
         if not recipe.short_link:
-            recipe.save()  # Generates short_link via model's save()
+            recipe.save()
         return Response({'short-link': recipe.short_link})
 
     @action(
