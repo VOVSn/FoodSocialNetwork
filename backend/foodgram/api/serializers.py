@@ -11,8 +11,9 @@ User = get_user_model()
 
 class RecipeShortSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(source='pic', read_only=True)
-    cooking_time = serializers.IntegerField(source='time_to_cook',
-                                            read_only=True)
+    cooking_time = serializers.IntegerField(
+        source='time_to_cook', read_only=True
+    )
 
     class Meta:
         model = Recipe
@@ -80,8 +81,9 @@ class SubscriptionSerializer(UserSerializer):
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=True,
-                                     help_text='Пароль')
+    password = serializers.CharField(
+        write_only=True, required=True, help_text='Пароль'
+    )
 
     class Meta:
         model = User
@@ -126,10 +128,12 @@ class UserAvatarSerializer(serializers.ModelSerializer):
 
 
 class PasswordChangeSerializer(serializers.Serializer):
-    current_password = serializers.CharField(write_only=True, required=True,
-                                             help_text='Текущий пароль')
-    new_password = serializers.CharField(write_only=True, required=True,
-                                         help_text='Новый пароль')
+    current_password = serializers.CharField(
+        write_only=True, required=True, help_text='Текущий пароль'
+    )
+    new_password = serializers.CharField(
+        write_only=True, required=True, help_text='Новый пароль'
+    )
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -177,8 +181,9 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     is_in_shopping_cart = serializers.SerializerMethodField()
     image = serializers.ImageField(source='pic', read_only=True)
     text = serializers.CharField(source='description', read_only=True)
-    cooking_time = serializers.IntegerField(source='time_to_cook',
-                                            read_only=True)
+    cooking_time = serializers.IntegerField(
+        source='time_to_cook', read_only=True
+    )
 
     class Meta:
         model = Recipe
