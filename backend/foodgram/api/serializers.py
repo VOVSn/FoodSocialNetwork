@@ -2,6 +2,8 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from drf_extra_fields.fields import Base64ImageField
+from djoser.serializers import UserCreateSerializer as DjUserCreateSerializer
+from djoser.serializers import UserSerializer as DjUserSerializer
 
 from recipes.models import Recipe, Tag, Ingredient, RecipeIngredient
 from users.models import Subscription
@@ -23,7 +25,7 @@ class RecipeShortSerializer(serializers.ModelSerializer):
         }
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(DjUserSerializer):
     is_subscribed = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -38,15 +40,9 @@ class UserSerializer(serializers.ModelSerializer):
             'avatar',
         )
         extra_kwargs = {
-            'first_name': {
-                'help_text': 'Введите имя пользователя'
-            },
-            'last_name': {
-                'help_text': 'Введите фамилию пользователя'
-            },
-            'avatar': {
-                'help_text': 'Загрузите аватар пользователя'
-            },
+            'first_name': {'help_text': 'Введите имя пользователя'},
+            'last_name': {'help_text': 'Введите фамилию пользователя'},
+            'avatar': {'help_text': 'Загрузите аватар пользователя'},
         }
 
     def get_is_subscribed(self, obj):
@@ -80,51 +76,18 @@ class SubscriptionSerializer(UserSerializer):
         return obj.recipes.count()
 
 
-class UserCreateSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(
-        write_only=True, required=True, help_text='Пароль'
-    )
-
-    class Meta:
-        model = User
-        fields = (
-            'email',
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'password',
-            'avatar',
-        )
-        extra_kwargs = {
-            'email': {
-                'help_text': 'Адрес электронной почты'
-            },
-            'username': {
-                'help_text': 'Уникальный юзернейм'
-            },
-            'first_name': {
-                'help_text': 'Имя'
-            },
-            'last_name': {
-                'help_text': 'Фамилия'
-            },
-        }
-
-    def create(self, validated_data):
-        password = validated_data.pop('password')
-        user = User(**validated_data)
-        user.set_password(password)
-        user.save()
-        return user
-
-
 class UserAvatarSerializer(serializers.ModelSerializer):
     avatar = Base64ImageField(required=True)
 
     class Meta:
         model = User
         fields = ('avatar',)
+
+
+class UserCreateSerializer(DjUserCreateSerializer):
+    password = serializers.CharField(
+        write_only=True, required=True, help_text='Пароль'
+    )
 
 
 class PasswordChangeSerializer(serializers.Serializer):

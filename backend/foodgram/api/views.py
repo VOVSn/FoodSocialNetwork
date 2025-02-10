@@ -7,28 +7,25 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, SAFE_METHODS
 from rest_framework.response import Response
+from djoser.views import UserViewSet as DjoserUserViewSet
 
 from permissions import IsAuthorOrReadOnly
 from recipes.models import (
     Tag, Ingredient, Recipe, Favorite, ShoppingList, RecipeIngredient
 )
 from serializers import (
-    UserSerializer, SubscriptionSerializer, UserCreateSerializer,
-    UserAvatarSerializer, PasswordChangeSerializer, TagSerializer,
-    IngredientSerializer, RecipeWriteSerializer, RecipeReadSerializer
+    SubscriptionSerializer, UserAvatarSerializer, PasswordChangeSerializer,
+    TagSerializer, IngredientSerializer, RecipeWriteSerializer,
+    RecipeReadSerializer
 )
 from users.models import Subscription
+
 
 User = get_user_model()
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(DjoserUserViewSet):
     queryset = User.objects.all()
-
-    def get_serializer_class(self):
-        if self.action == 'create':
-            return UserCreateSerializer
-        return UserSerializer
 
     @action(
         detail=False,
@@ -49,8 +46,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def avatar(self, request):
         user = request.user
         if request.method == 'PUT':
-            serializer = UserAvatarSerializer(instance=user,
-                                              data=request.data)
+            serializer = UserAvatarSerializer(instance=user, data=request.data)
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data)
@@ -68,8 +64,9 @@ class UserViewSet(viewsets.ModelViewSet):
         url_path='set_password'
     )
     def set_password(self, request):
-        serializer = PasswordChangeSerializer(data=request.data,
-                                              context={'request': request})
+        serializer = PasswordChangeSerializer(
+            data=request.data, context={'request': request}
+        )
         serializer.is_valid(raise_exception=True)
         user = request.user
         current_password = serializer.validated_data.get('current_password')
@@ -91,9 +88,7 @@ class UserViewSet(viewsets.ModelViewSet):
     )
     def subscriptions(self, request):
         user = request.user
-        subscriptions = User.objects.filter(
-            subscribers__subscriber=user
-        )
+        subscriptions = User.objects.filter(subscribers__subscriber=user)
         page = self.paginate_queryset(subscriptions)
         serializer = SubscriptionSerializer(
             page, many=True, context={'request': request}
