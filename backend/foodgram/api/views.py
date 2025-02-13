@@ -301,3 +301,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
             {'errors': 'Рецепт отсутствует в избранном.'},
             status=status.HTTP_400_BAD_REQUEST
         )
+
+
+class ShortLinkRedirectView(viewsets.RedirectView):
+    permanent = False
+
+    def get_redirect_url(self, *args, **kwargs):
+        recipe = get_object_or_404(Recipe, short_link=kwargs['short_link'])
+        return f'/recipes/{recipe.id}'

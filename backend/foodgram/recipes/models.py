@@ -1,12 +1,6 @@
-import os
-
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils.crypto import get_random_string
-from dotenv import load_dotenv
-
-
-load_dotenv()
 
 
 User = get_user_model()
@@ -86,8 +80,8 @@ class Recipe(models.Model):
         help_text='Выберите теги для рецепта'
     )
     time_to_cook = models.PositiveIntegerField(
-        help_text='Время приготовления в минутах',
-        verbose_name='Время приготовления'
+        verbose_name='Время приготовления',
+        help_text='Введите время приготовления в минутах'
     )
     ingredients = models.ManyToManyField(
         Ingredient,
@@ -97,12 +91,12 @@ class Recipe(models.Model):
         help_text='Добавьте ингредиенты рецепта'
     )
     short_link = models.CharField(
-        max_length=20,
+        max_length=10,
         unique=True,
         blank=True,
         null=True,
         verbose_name='Короткая ссылка',
-        help_text='Короткая ссылка на рецепт'
+        help_text='Короткий идентификатор рецепта'
     )
 
     class Meta:
@@ -114,9 +108,8 @@ class Recipe(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.short_link:
-            domain = os.getenv('DOMAIN', 'https://example.com')
             while True:
-                candidate = f'{domain}/s/{get_random_string(3)}'
+                candidate = get_random_string(6)
                 if not Recipe.objects.filter(short_link=candidate).exists():
                     self.short_link = candidate
                     break
