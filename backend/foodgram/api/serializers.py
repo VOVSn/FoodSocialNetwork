@@ -2,8 +2,7 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from drf_extra_fields.fields import Base64ImageField
-from djoser.serializers import UserCreateSerializer as DjUserCreateSerializer
-from djoser.serializers import UserSerializer as DjUserSerializer
+from djoser.serializers import UserSerializer as DjoserUserSerializer
 
 from recipes.models import Recipe, Tag, Ingredient, RecipeIngredient
 from users.models import Subscription
@@ -25,19 +24,13 @@ class RecipeShortSerializer(serializers.ModelSerializer):
         }
 
 
-class UserSerializer(DjUserSerializer):
+class UserSerializer(DjoserUserSerializer):
     is_subscribed = serializers.SerializerMethodField(read_only=True)
 
-    class Meta:
-        model = User
+    class Meta(DjoserUserSerializer.Meta):
         fields = (
-            'email',
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'is_subscribed',
-            'avatar',
+            'email', 'id', 'username', 'first_name', 'last_name',
+            'is_subscribed', 'avatar'
         )
         extra_kwargs = {
             'first_name': {'help_text': 'Введите имя пользователя'},
@@ -84,7 +77,7 @@ class UserAvatarSerializer(serializers.ModelSerializer):
         fields = ('avatar',)
 
 
-class UserCreateSerializer(DjUserCreateSerializer):
+class UserCreateSerializer(DjoserUserSerializer):
     password = serializers.CharField(
         write_only=True, required=True, help_text='Пароль'
     )
@@ -92,10 +85,12 @@ class UserCreateSerializer(DjUserCreateSerializer):
 
 class PasswordChangeSerializer(serializers.Serializer):
     current_password = serializers.CharField(
-        write_only=True, required=True, help_text='Текущий пароль'
+        write_only=True, required=True,
+        help_text='Текущий пароль'
     )
     new_password = serializers.CharField(
-        write_only=True, required=True, help_text='Новый пароль'
+        write_only=True, required=True,
+        help_text='Новый пароль'
     )
 
 

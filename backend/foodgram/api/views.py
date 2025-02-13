@@ -29,16 +29,6 @@ class UserViewSet(DjoserUserViewSet):
 
     @action(
         detail=False,
-        methods=['get'],
-        permission_classes=[IsAuthenticated],
-        url_path='me'
-    )
-    def me(self, request):
-        serializer = self.get_serializer(request.user)
-        return Response(serializer.data)
-
-    @action(
-        detail=False,
         methods=['put', 'delete'],
         permission_classes=[IsAuthenticated],
         url_path='me/avatar'
@@ -83,12 +73,13 @@ class UserViewSet(DjoserUserViewSet):
     @action(
         detail=False,
         methods=['get'],
-        url_path='subscriptions',
-        permission_classes=[IsAuthenticated]
+        permission_classes=[IsAuthenticated],
+        url_path='subscriptions'
     )
     def subscriptions(self, request):
-        user = request.user
-        subscriptions = User.objects.filter(subscribers__subscriber=user)
+        subscriptions = User.objects.filter(
+            subscribers__subscriber=request.user
+        )
         page = self.paginate_queryset(subscriptions)
         serializer = SubscriptionSerializer(
             page, many=True, context={'request': request}
