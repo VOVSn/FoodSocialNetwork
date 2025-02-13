@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from .models import (
-    Tag, Ingredient, Recipe, RecipeIngredient, Favorite, ShoppingList
+    Tag, Ingredient, Recipe, RecipeIngredient, Favorite, ShoppingCart
 )
 
 
@@ -19,8 +19,8 @@ class FavoriteInline(admin.TabularInline):
     verbose_name_plural = 'Избранные рецепты'
 
 
-class ShoppingListInline(admin.TabularInline):
-    model = ShoppingList
+class ShoppingCartInline(admin.TabularInline):
+    model = ShoppingCart
     extra = 1
     verbose_name = 'Рецепт в списке покупок'
     verbose_name_plural = 'Рецепты в списке покупок'
@@ -60,7 +60,7 @@ class RecipeAdmin(admin.ModelAdmin):
     search_fields = ('name', 'author__username')
     list_filter = ('author', 'tags')
     ordering = ('name',)
-    inlines = [RecipeIngredientInline, FavoriteInline, ShoppingListInline]
+    inlines = [RecipeIngredientInline, FavoriteInline, ShoppingCartInline]
     filter_horizontal = ('tags',)
     fieldsets = (
         (None, {

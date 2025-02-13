@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
 from .models import FoodgramUser, Subscription
-from recipes.models import Favorite, ShoppingList
+from recipes.models import Favorite, ShoppingCart
 
 
 class FavoriteInline(admin.TabularInline):
@@ -13,8 +13,8 @@ class FavoriteInline(admin.TabularInline):
     fk_name = 'user'
 
 
-class ShoppingListInline(admin.TabularInline):
-    model = ShoppingList
+class ShoppingCartInline(admin.TabularInline):
+    model = ShoppingCart
     extra = 1
     verbose_name = 'Рецепт в списке покупок'
     verbose_name_plural = 'Рецепты в списке покупок'
@@ -46,7 +46,7 @@ class CustomUserAdmin(UserAdmin):
     list_filter = ('is_active', 'is_staff')
     ordering = ('username',)
     inlines = [
-        FavoriteInline, ShoppingListInline,
+        FavoriteInline, ShoppingCartInline,
         SubscriptionAsSubscriberInline, SubscriptionAsAuthorInline,
     ]
     fieldsets = (

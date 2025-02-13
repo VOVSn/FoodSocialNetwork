@@ -11,7 +11,7 @@ from djoser.views import UserViewSet as DjoserUserViewSet
 
 from permissions import IsAuthorOrReadOnly
 from recipes.models import (
-    Tag, Ingredient, Recipe, Favorite, ShoppingList, RecipeIngredient
+    Tag, Ingredient, Recipe, Favorite, ShoppingCart, RecipeIngredient
 )
 from serializers import (
     SubscriptionSerializer, UserAvatarSerializer, PasswordChangeSerializer,
@@ -181,7 +181,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(favorites__user=request.user)
         is_in_shopping_cart = request.query_params.get('is_in_shopping_cart')
         if is_in_shopping_cart == '1' and request.user.is_authenticated:
-            queryset = queryset.filter(shopping_list__user=request.user)
+            queryset = queryset.filter(shopping_cart__user=request.user)
         author = request.query_params.get('author')
         if author:
             queryset = queryset.filter(author__id=author)
@@ -208,8 +208,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_path='download_shopping_cart'
     )
     def download_shopping_cart(self, request):
-        shopping_list = ShoppingList.objects.filter(user=request.user)
-        recipe_ids = shopping_list.values_list('recipe', flat=True)
+        shopping_cart = ShoppingCart.objects.filter(user=request.user)
+        recipe_ids = shopping_cart.values_list('recipe', flat=True)
         ingredients = RecipeIngredient.objects.filter(
             recipe__in=recipe_ids
         ).values(
@@ -224,7 +224,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         content = '\n'.join(lines)
         response = HttpResponse(content, content_type='text/plain')
         response['Content-Disposition'] = (
-            'attachment; filename="shopping_list.txt"'
+            'attachment; filename="shopping_cart.txt"'
         )
         return response
 
@@ -237,12 +237,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def add_to_shopping_cart(self, request, pk=None):
         recipe = self.get_object()
         user = request.user
-        if recipe.shopping_list.filter(user=user).exists():
+        if recipe.shopping_cart.filter(user=user).exists():
             return Response(
                 {'errors': 'Рецепт уже в списке покупок.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        ShoppingList.objects.create(user=user, recipe=recipe)
+        ShoppingCart.objects.create(user=user, recipe=recipe)
         data = {
             'id': recipe.id,
             'name': recipe.name,
@@ -256,7 +256,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def remove_from_shopping_cart(self, request, pk=None):
         recipe = self.get_object()
         user = request.user
-        instance = ShoppingList.objects.filter(user=user, recipe=recipe)
+        instance = ShoppingCart.objects.filter(user=user, recipe=recipe)
         if instance.exists():
             instance.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
