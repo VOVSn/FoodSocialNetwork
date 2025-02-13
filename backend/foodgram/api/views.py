@@ -1,7 +1,9 @@
 from django.db.models import Sum
+from django.views.generic import RedirectView
 from django.http import HttpResponse
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
+
 
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -9,14 +11,14 @@ from rest_framework.permissions import IsAuthenticated, SAFE_METHODS
 from rest_framework.response import Response
 from djoser.views import UserViewSet as DjoserUserViewSet
 
-from permissions import IsAuthorOrReadOnly
-from recipes.models import (
-    Tag, Ingredient, Recipe, Favorite, ShoppingCart, RecipeIngredient
-)
-from serializers import (
+from api.permissions import IsAuthorOrReadOnly
+from api.serializers import (
     SubscriptionSerializer, UserAvatarSerializer, PasswordChangeSerializer,
     TagSerializer, IngredientSerializer, RecipeWriteSerializer,
     RecipeReadSerializer
+)
+from recipes.models import (
+    Tag, Ingredient, Recipe, Favorite, ShoppingCart, RecipeIngredient
 )
 from users.models import Subscription
 
@@ -294,7 +296,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
 
-class ShortLinkRedirectView(viewsets.RedirectView):
+class ShortLinkRedirectView(RedirectView):
     permanent = False
 
     def get_redirect_url(self, *args, **kwargs):
