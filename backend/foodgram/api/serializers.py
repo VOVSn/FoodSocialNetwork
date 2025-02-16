@@ -33,9 +33,15 @@ class UserSerializer(DjoserUserSerializer):
             'is_subscribed', 'avatar'
         )
         extra_kwargs = {
-            'first_name': {'help_text': 'Введите имя пользователя'},
-            'last_name': {'help_text': 'Введите фамилию пользователя'},
-            'avatar': {'help_text': 'Загрузите аватар пользователя'},
+            'first_name': {
+                'help_text': 'Введите имя пользователя'
+            },
+            'last_name': {
+                'help_text': 'Введите фамилию пользователя'
+            },
+            'avatar': {
+                'help_text': 'Загрузите аватар пользователя'
+            },
         }
 
     def get_is_subscribed(self, obj):
@@ -78,19 +84,35 @@ class UserAvatarSerializer(serializers.ModelSerializer):
 
 
 class UserCreateSerializer(DjoserUserSerializer):
+    username = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        help_text='Введите имя пользователя'
+    )
     password = serializers.CharField(
         write_only=True, required=True, help_text='Пароль'
     )
 
+    class Meta(DjoserUserSerializer.Meta):
+        fields = (
+            'email', 'id', 'username', 'first_name', 'last_name', 'password'
+        )
+        extra_kwargs = {
+            'first_name': {
+                'help_text': 'Введите имя пользователя'
+            },
+            'last_name': {
+                'help_text': 'Введите фамилию пользователя'
+            },
+        }
+
 
 class PasswordChangeSerializer(serializers.Serializer):
     current_password = serializers.CharField(
-        write_only=True, required=True,
-        help_text='Текущий пароль'
+        write_only=True, required=True, help_text='Текущий пароль'
     )
     new_password = serializers.CharField(
-        write_only=True, required=True,
-        help_text='Новый пароль'
+        write_only=True, required=True, help_text='Новый пароль'
     )
 
 

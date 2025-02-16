@@ -3,6 +3,11 @@ from django.contrib.auth.models import AbstractUser
 
 
 class FoodgramUser(AbstractUser):
+    email = models.EmailField(
+        unique=True,
+        verbose_name='Электронная почта',
+        help_text='Введите электронную почту'
+    )
     first_name = models.CharField(
         max_length=150,
         verbose_name='Имя',
@@ -20,6 +25,8 @@ class FoodgramUser(AbstractUser):
         verbose_name='Аватар',
         help_text='Загрузите аватар пользователя'
     )
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
 
     class Meta:
         verbose_name = 'Пользователь'
@@ -48,7 +55,12 @@ class Subscription(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['subscriber', 'author'], name='unique_subscription'
+                fields=['subscriber', 'author'],
+                name='unique_subscription'
+            ),
+            models.CheckConstraint(
+                check=~models.Q(subscriber=models.F('author')),
+                name='prevent_self_subscription'
             )
         ]
         verbose_name = 'Подписка'

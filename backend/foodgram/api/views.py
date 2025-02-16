@@ -1,15 +1,17 @@
-from django.db.models import Sum
-from django.views.generic import RedirectView
-from django.http import HttpResponse
+import os
+
 from django.contrib.auth import get_user_model
+from django.db.models import Sum
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-
-
+from django.views.generic import RedirectView
+from djoser.views import UserViewSet as DjoserUserViewSet
+from dotenv import load_dotenv
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, SAFE_METHODS
 from rest_framework.response import Response
-from djoser.views import UserViewSet as DjoserUserViewSet
+from rest_framework.pagination import PageNumberPagination
 
 from api.permissions import IsAuthorOrReadOnly
 from api.serializers import (
@@ -22,12 +24,39 @@ from recipes.models import (
 )
 from users.models import Subscription
 
+load_dotenv()
+DOMAIN = os.getenv('DOMAIN', 'localhost')
 
 User = get_user_model()
 
 
+class CustomPagination(PageNumberPagination):
+    page_size_query_param = 'limit'
+
+
 class UserViewSet(DjoserUserViewSet):
     queryset = User.objects.all()
+    pagination_class = CustomPagination
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve', 'create']:
+            permission_classes = []
+        else:
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(
+                page, many=True, context={'request': request}
+            )
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(
+            queryset, many=True, context={'request': request}
+        )
+        return Response(serializer.data)
 
     @action(
         detail=False,
@@ -42,7 +71,7 @@ class UserViewSet(DjoserUserViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data)
-        elif request.method == 'DELETE':
+        if request.method == 'DELETE':
             if user.avatar:
                 user.avatar.delete(save=False)
             user.avatar = None
@@ -67,8 +96,7 @@ class UserViewSet(DjoserUserViewSet):
                 {'current_password': ['Неверный текущий пароль.']},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        new_password = serializer.validated_data.get('new_password')
-        user.set_password(new_password)
+        user.set_password(serializer.validated_data.get('new_password'))
         user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -150,6 +178,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
+    pagination_class = CustomPagination
 
     def get_serializer_class(self):
         if self.request.method in SAFE_METHODS:
@@ -192,7 +221,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe = self.get_object()
         if not recipe.short_link:
             recipe.save()
-        return Response({'short-link': recipe.short_link})
+        return Response(
+            {'short-link': f'https://{DOMAIN}/{recipe.short_link}'}
+        )
 
     @action(
         detail=False,

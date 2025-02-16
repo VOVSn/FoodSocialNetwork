@@ -38,7 +38,7 @@ class SubscriptionAsAuthorInline(admin.TabularInline):
 
 
 @admin.register(FoodgramUser)
-class CustomUserAdmin(UserAdmin):
+class FoodgramUserAdmin(UserAdmin):
     list_display = (
         'username', 'first_name', 'last_name', 'email', 'avatar'
     )
