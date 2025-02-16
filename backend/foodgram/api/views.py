@@ -125,9 +125,9 @@ class UserViewSet(DjoserUserViewSet):
         permission_classes=[IsAuthenticated],
         url_path='subscribe'
     )
-    def subscribe(self, request, pk=None):
+    def subscribe(self, request, id=None):
         user = request.user
-        author = get_object_or_404(User, pk=pk)
+        author = get_object_or_404(User, pk=id)
         if user == author:
             return Response(
                 {'errors': 'Нельзя подписаться на самого себя.'},
@@ -147,9 +147,9 @@ class UserViewSet(DjoserUserViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
-    def unsubscribe(self, request, pk=None):
+    def unsubscribe(self, request, id=None):
         user = request.user
-        author = get_object_or_404(User, pk=pk)
+        author = get_object_or_404(User, pk=id)
         subscription = Subscription.objects.filter(
             subscriber=user, author=author
         )

@@ -6,7 +6,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from recipes.models import Ingredient
 
-DATA_DIR = os.path.join(settings.BASE_DIR.parent.parent, 'data')
+DATA_DIR = os.path.join(settings.BASE_DIR, 'data')
 INGREDIENTS_FILE = os.path.join(DATA_DIR, 'ingredients.csv')
 
 
