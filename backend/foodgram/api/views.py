@@ -107,14 +107,17 @@ class UserViewSet(DjoserUserViewSet):
         url_path='subscriptions'
     )
     def subscriptions(self, request):
-        subscriptions = User.objects.filter(
-            subscribers__subscriber=request.user
-        )
+        subscriptions = User.objects.filter(subscribers__subscriber=request.user)
         page = self.paginate_queryset(subscriptions)
+        if page is not None:
+            serializer = SubscriptionSerializer(
+                page, many=True, context={'request': request}
+            )
+            return self.get_paginated_response(serializer.data)
         serializer = SubscriptionSerializer(
-            page, many=True, context={'request': request}
+            subscriptions, many=True, context={'request': request}
         )
-        return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)
 
     @action(
         detail=True,
