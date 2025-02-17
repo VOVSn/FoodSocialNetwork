@@ -9,7 +9,7 @@ from djoser.views import UserViewSet as DjoserUserViewSet
 from dotenv import load_dotenv
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated, SAFE_METHODS
+from rest_framework.permissions import IsAuthenticated, AllowAny, SAFE_METHODS
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 
@@ -107,7 +107,9 @@ class UserViewSet(DjoserUserViewSet):
         url_path='subscriptions'
     )
     def subscriptions(self, request):
-        subscriptions = User.objects.filter(subscribers__subscriber=request.user)
+        subscriptions = User.objects.filter(
+            subscribers__subscriber=request.user
+        )
         page = self.paginate_queryset(subscriptions)
         if page is not None:
             serializer = SubscriptionSerializer(
@@ -165,11 +167,13 @@ class UserViewSet(DjoserUserViewSet):
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    permission_classes = [AllowAny]
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -225,7 +229,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if not recipe.short_link:
             recipe.save()
         return Response(
-            {'short-link': f'https://{DOMAIN}/{recipe.short_link}'}
+            {'short-link': f'https://{DOMAIN}/s/{recipe.short_link}'}
         )
 
     @action(
@@ -335,4 +339,4 @@ class ShortLinkRedirectView(RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         recipe = get_object_or_404(Recipe, short_link=kwargs['short_link'])
-        return f'/recipes/{recipe.id}'
+        return f'/recipes/{recipe.id}/'

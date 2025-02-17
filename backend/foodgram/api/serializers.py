@@ -84,6 +84,10 @@ class UserAvatarSerializer(serializers.ModelSerializer):
 
 
 class UserCreateSerializer(DjoserUserSerializer):
+    email = serializers.EmailField(
+        required=True,
+        help_text='Введите электронную почту'
+    )
     username = serializers.CharField(
         required=True,
         allow_blank=False,
@@ -98,13 +102,18 @@ class UserCreateSerializer(DjoserUserSerializer):
             'email', 'id', 'username', 'first_name', 'last_name', 'password'
         )
         extra_kwargs = {
-            'first_name': {
-                'help_text': 'Введите имя пользователя'
-            },
-            'last_name': {
-                'help_text': 'Введите фамилию пользователя'
-            },
+            'first_name': {'help_text': 'Введите имя пользователя'},
+            'last_name': {'help_text': 'Введите фамилию пользователя'},
         }
+
+    def create(self, validated_data):
+        email = validated_data.get('email')
+        if not email:
+            raise serializers.ValidationError(
+                {'email': 'Это поле обязательно.'}
+            )
+        user = User.objects.create_user(**validated_data)
+        return user
 
 
 class PasswordChangeSerializer(serializers.Serializer):
@@ -198,7 +207,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(), many=True
     )
-    image = Base64ImageField()
+    image = Base64ImageField(source='pic')
     text = serializers.CharField(source='description')
     cooking_time = serializers.IntegerField(source='time_to_cook')
 
