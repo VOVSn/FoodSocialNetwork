@@ -192,6 +192,20 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeReadSerializer
         return RecipeWriteSerializer
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        recipe = serializer.save()
+        read_serializer = RecipeReadSerializer(
+            recipe, context={'request': request}
+        )
+        headers = self.get_success_headers(read_serializer.data)
+        return Response(
+            read_serializer.data,
+            status=status.HTTP_201_CREATED,
+            headers=headers
+        )
+
     def get_permissions(self):
         if self.action in ['create', 'shopping_cart', 'favorite',
                            'download_shopping_cart']:

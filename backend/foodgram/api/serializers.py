@@ -26,6 +26,7 @@ class RecipeShortSerializer(serializers.ModelSerializer):
 
 class UserSerializer(DjoserUserSerializer):
     is_subscribed = serializers.SerializerMethodField(read_only=True)
+    avatar = serializers.SerializerMethodField()
 
     class Meta(DjoserUserSerializer.Meta):
         fields = (
@@ -51,6 +52,11 @@ class UserSerializer(DjoserUserSerializer):
         return Subscription.objects.filter(
             subscriber=request.user, author=obj
         ).exists()
+
+    def get_avatar(self, obj):
+        if obj.avatar:
+            return self.context['request'].build_absolute_uri(obj.avatar.url)
+        return None
 
 
 class SubscriptionSerializer(UserSerializer):
