@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404
 from djoser.serializers import UserSerializer as DjoserUserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
-from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
+from recipes.models import Ingredient, RecipeIngredient, Recipe, Tag
 from users.models import Subscription
 
 User = get_user_model()

@@ -12,7 +12,6 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny, SAFE_METHODS
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
-
 from api.permissions import IsAuthorOrReadOnly
 from api.serializers import (
     SubscriptionSerializer, UserAvatarSerializer, PasswordChangeSerializer,
@@ -23,6 +22,7 @@ from recipes.models import (
     Tag, Ingredient, Recipe, Favorite, ShoppingCart, RecipeIngredient
 )
 from users.models import Subscription
+
 
 load_dotenv()
 DOMAIN = os.getenv('DOMAIN', 'localhost')
