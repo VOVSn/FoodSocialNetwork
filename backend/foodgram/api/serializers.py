@@ -1,10 +1,9 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-from rest_framework import serializers
-from drf_extra_fields.fields import Base64ImageField
 from djoser.serializers import UserSerializer as DjoserUserSerializer
-
-from recipes.models import Recipe, Tag, Ingredient, RecipeIngredient
+from drf_extra_fields.fields import Base64ImageField
+from rest_framework import serializers
+from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
 from users.models import Subscription
 
 User = get_user_model()
