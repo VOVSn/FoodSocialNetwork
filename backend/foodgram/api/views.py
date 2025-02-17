@@ -1,5 +1,11 @@
 import os
 
+from api.permissions import IsAuthorOrReadOnly
+from api.serializers import (
+    SubscriptionSerializer, UserAvatarSerializer, PasswordChangeSerializer,
+    TagSerializer, IngredientSerializer, RecipeWriteSerializer,
+    RecipeReadSerializer
+)
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.http import HttpResponse
@@ -7,20 +13,14 @@ from django.shortcuts import get_object_or_404
 from django.views.generic import RedirectView
 from djoser.views import UserViewSet as DjoserUserViewSet
 from dotenv import load_dotenv
+from recipes.models import (
+    Favorite, Ingredient, Recipe, RecipeIngredient, ShoppingCart, Tag
+)
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated, AllowAny, SAFE_METHODS
+from rest_framework.permissions import AllowAny, IsAuthenticated, SAFE_METHODS
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
-from api.permissions import IsAuthorOrReadOnly
-from api.serializers import (
-    SubscriptionSerializer, UserAvatarSerializer, PasswordChangeSerializer,
-    TagSerializer, IngredientSerializer, RecipeWriteSerializer,
-    RecipeReadSerializer
-)
-from recipes.models import (
-    Tag, Ingredient, Recipe, Favorite, ShoppingCart, RecipeIngredient
-)
 from users.models import Subscription
 
 

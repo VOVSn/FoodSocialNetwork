@@ -1,7 +1,6 @@
-from django.db import models
 from django.contrib.auth import get_user_model
+from django.db import models
 from django.utils.crypto import get_random_string
-
 
 User = get_user_model()
 
