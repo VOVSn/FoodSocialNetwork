@@ -47,12 +47,20 @@ Pillow, pytest, pytest-django, pytest-pythonpath, PyYAML
 Для работы проекта необходим файл (.env) с переменными окружения следующего вида:
 
 POSTGRES_DB=<name>
+
 POSTGRES_USER=<db_user>
+
 POSTGRES_PASSWORD=<db_password>
+
 DB_HOST=<db_container_name>
+
 DB_PORT=5432
+
 SECRET_KEY="django-insecure-secret-key-example-12345"
+
 ALLOWED_HOSTS=<domain_name.tld>, <IP>
+
+DOMAIN="localhost"
 
 ### Как запустить проект локально:
 
