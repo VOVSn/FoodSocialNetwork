@@ -21,6 +21,7 @@ class Tag(models.Model):
     class Meta:
         verbose_name = 'Тег'
         verbose_name_plural = 'Теги'
+        ordering = ('name',)
 
     def __str__(self):
         return self.name
@@ -42,6 +43,7 @@ class Ingredient(models.Model):
     class Meta:
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
+        ordering = ('name',)
 
     def __str__(self):
         return f'{self.name} ({self.measurement_unit})'
@@ -101,6 +103,7 @@ class Recipe(models.Model):
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
+        ordering = ('id',)
 
     def __str__(self):
         return self.name
@@ -113,6 +116,11 @@ class Recipe(models.Model):
                     self.short_link = candidate
                     break
         super().save(*args, **kwargs)
+
+    def favorites_count(self):
+        return self.favorites.count()
+
+    favorites_count.short_description = 'Количество в избранном'
 
 
 class RecipeIngredient(models.Model):
@@ -148,7 +156,6 @@ class RecipeIngredient(models.Model):
 
 
 class Favorite(models.Model):
-    """Модель для хранения избранных рецептов пользователей."""
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -174,7 +181,6 @@ class Favorite(models.Model):
 
 
 class ShoppingCart(models.Model):
-    """Модель для представления рецептов в списке покупок пользователя."""
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
