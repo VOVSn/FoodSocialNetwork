@@ -317,6 +317,16 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             )
         return value
 
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['tags'] = TagSerializer(instance.tags, many=True).data
+        recipe_ingredients = instance.recipe_ingredients.all()
+        representation['ingredients'] = RecipeIngredientSerializer(
+            recipe_ingredients, many=True
+        ).data
+
+        return representation
+
     def create(self, validated_data):
         ingredients_data = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
