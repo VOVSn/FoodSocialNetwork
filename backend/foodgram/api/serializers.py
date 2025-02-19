@@ -1,8 +1,12 @@
+import re
+
 from django.contrib.auth import get_user_model
+from django.db.utils import IntegrityError
 from django.shortcuts import get_object_or_404
 from djoser.serializers import UserSerializer as DjoserUserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
+
 from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
 from users.models import Subscription
 
@@ -89,14 +93,15 @@ class UserAvatarSerializer(serializers.ModelSerializer):
 
 
 class UserCreateSerializer(DjoserUserSerializer):
-    email = serializers.EmailField(
-        required=True,
-        help_text='Введите электронную почту'
-    )
     username = serializers.CharField(
         required=True,
         allow_blank=False,
-        help_text='Введите имя пользователя'
+        max_length=150,
+        help_text='Введите имя пользователя (буквы, цифры, ., @, +, - и _)',
+    )
+    email = serializers.EmailField(
+        required=True,
+        help_text='Введите электронную почту'
     )
     password = serializers.CharField(
         write_only=True, required=True, help_text='Пароль'
@@ -111,14 +116,34 @@ class UserCreateSerializer(DjoserUserSerializer):
             'last_name': {'help_text': 'Введите фамилию пользователя'},
         }
 
-    def create(self, validated_data):
-        email = validated_data.get('email')
-        if not email:
+    def validate_username(self, value):
+        if not re.match(r'^[\w.@+-]+\Z', value):
             raise serializers.ValidationError(
-                {'email': 'Это поле обязательно.'}
+                'Имя пользователя может содержать только буквы, цифры и '
+                'символы . @ + - _'
             )
-        user = User.objects.create_user(**validated_data)
-        return user
+        if len(value) > 150:
+            raise serializers.ValidationError(
+                'Имя пользователя не должно превышать 150 символов.'
+            )
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError('Имя пользователя уже занято.')
+        return value
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError(
+                'Пользователь с таким email уже существует.'
+            )
+        return value
+
+    def create(self, validated_data):
+        try:
+            return User.objects.create_user(**validated_data)
+        except IntegrityError:
+            raise serializers.ValidationError({
+                'username': 'Имя пользователя уже занято.'
+            })
 
 
 class PasswordChangeSerializer(serializers.Serializer):
@@ -222,10 +247,57 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             'ingredients', 'tags', 'image', 'name', 'text', 'cooking_time'
         )
 
+    def validate(self, data):
+        if 'ingredients' not in data or not data['ingredients']:
+            raise serializers.ValidationError('Ингредиенты обязательны.')
+        if 'tags' not in data or not data['tags']:
+            raise serializers.ValidationError('Теги обязательны.')
+        return data
+
     def validate_cooking_time(self, value):
         if value < 1:
             raise serializers.ValidationError(
                 'Время приготовления должно быть >= 1'
+            )
+        return value
+
+    def validate_ingredients(self, ingredients_data):
+        if not ingredients_data:
+            raise serializers.ValidationError(
+                'Ингредиенты не могут быть пустыми.'
+            )
+        seen_ingredients = set()
+        for ingredient in ingredients_data:
+            ingredient_id = ingredient.get('id')
+            amount = ingredient.get('amount')
+            if amount < 1:
+                raise serializers.ValidationError(
+                    'Количество ингредиента должно быть больше 0.'
+                )
+            if not Ingredient.objects.filter(id=ingredient_id).exists():
+                raise serializers.ValidationError(
+                    f'Ингредиент с id {ingredient_id} не существует.'
+                )
+            if ingredient_id in seen_ingredients:
+                raise serializers.ValidationError(
+                    'Ингредиенты не могут повторяться.'
+                )
+            seen_ingredients.add(ingredient_id)
+        return ingredients_data
+
+    def validate_tags(self, tags):
+        if not tags:
+            raise serializers.ValidationError('Теги не могут быть пустыми.')
+        tag_ids = [tag.id for tag in tags]
+        if len(tag_ids) != len(set(tag_ids)):
+            raise serializers.ValidationError('Теги не могут повторяться.')
+
+        return tags
+
+    def validate_image(self, value):
+        if not value:
+            raise serializers.ValidationError(
+                'Изображение не может быть пустым.'
             )
         return value
 
@@ -241,6 +313,8 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         ingredients_data = validated_data.pop('ingredients', None)
         tags = validated_data.pop('tags', None)
+        request = self.context.get('request')
+        instance.author = request.user
         if tags is not None:
             instance.tags.set(tags)
         if ingredients_data is not None:
@@ -255,13 +329,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         for ingredient in ingredients_data:
             ingredient_id = ingredient.get('id')
             amount = ingredient.get('amount')
-            if ingredient_id is None or amount is None:
-                raise serializers.ValidationError(
-                    'Каждый ингредиент должен иметь id и amount.'
-                )
-            ingredient_obj = get_object_or_404(
-                Ingredient, id=ingredient_id
-            )
+            ingredient_obj = get_object_or_404(Ingredient, id=ingredient_id)
             RecipeIngredient.objects.create(
                 recipe=recipe, ingredient=ingredient_obj, amount=amount
             )

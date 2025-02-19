@@ -1,11 +1,5 @@
 import os
 
-from api.permissions import IsAuthorOrReadOnly
-from api.serializers import (
-    SubscriptionSerializer, UserAvatarSerializer, PasswordChangeSerializer,
-    TagSerializer, IngredientSerializer, RecipeWriteSerializer,
-    RecipeReadSerializer
-)
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.http import HttpResponse
@@ -13,18 +7,26 @@ from django.shortcuts import get_object_or_404
 from django.views.generic import RedirectView
 from djoser.views import UserViewSet as DjoserUserViewSet
 from dotenv import load_dotenv
-from recipes.models import (
-    Favorite, Ingredient, Recipe, RecipeIngredient, ShoppingCart, Tag
-)
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated, SAFE_METHODS
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+
+from api.permissions import IsAuthorOrReadOnly
+from api.serializers import (
+    SubscriptionSerializer, UserAvatarSerializer, PasswordChangeSerializer,
+    TagSerializer, IngredientSerializer, RecipeWriteSerializer,
+    RecipeReadSerializer
+)
+from recipes.models import (
+    Favorite, Ingredient, Recipe, RecipeIngredient, ShoppingCart, Tag
+)
 from users.models import Subscription
 
 
 load_dotenv()
+
 DOMAIN = os.getenv('DOMAIN', 'localhost')
 
 User = get_user_model()
@@ -32,6 +34,7 @@ User = get_user_model()
 
 class CustomPagination(PageNumberPagination):
     page_size_query_param = 'limit'
+    page_size = 6
 
 
 class UserViewSet(DjoserUserViewSet):
@@ -57,6 +60,14 @@ class UserViewSet(DjoserUserViewSet):
             queryset, many=True, context={'request': request}
         )
         return Response(serializer.data)
+
+    def get_paginated_response(self, data):
+        return Response({
+            'count': self.paginator.page.paginator.count,
+            'next': self.paginator.get_next_link(),
+            'previous': self.paginator.get_previous_link(),
+            'results': data
+        })
 
     @action(
         detail=False,
@@ -282,23 +293,34 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def add_to_shopping_cart(self, request, pk=None):
         recipe = self.get_object()
         user = request.user
-        if recipe.shopping_cart.filter(user=user).exists():
+        if user.is_authenticated:
+            if recipe.shopping_cart.filter(user=user).exists():
+                return Response(
+                    {'errors': 'Рецепт уже в списке покупок.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            ShoppingCart.objects.create(user=user, recipe=recipe)
+            data = {
+                'id': recipe.id,
+                'name': recipe.name,
+                'image': request.build_absolute_uri(recipe.pic.url)
+                if recipe.pic else None,
+                'cooking_time': recipe.time_to_cook
+            }
+            return Response(data, status=status.HTTP_201_CREATED)
+        else:
             return Response(
-                {'errors': 'Рецепт уже в списке покупок.'},
-                status=status.HTTP_400_BAD_REQUEST
+                {'detail': 'Authentication credentials were not provided.'},
+                status=status.HTTP_401_UNAUTHORIZED
             )
-        ShoppingCart.objects.create(user=user, recipe=recipe)
-        data = {
-            'id': recipe.id,
-            'name': recipe.name,
-            'image': request.build_absolute_uri(recipe.pic.url)
-            if recipe.pic else None,
-            'cooking_time': recipe.time_to_cook
-        }
-        return Response(data, status=status.HTTP_201_CREATED)
 
     @add_to_shopping_cart.mapping.delete
     def remove_from_shopping_cart(self, request, pk=None):
+        if not request.user.is_authenticated:
+            return Response(
+                {'detail': 'Authentication credentials were not provided.'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
         recipe = self.get_object()
         user = request.user
         instance = ShoppingCart.objects.filter(user=user, recipe=recipe)
@@ -319,23 +341,34 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def add_to_favorite(self, request, pk=None):
         recipe = self.get_object()
         user = request.user
-        if recipe.favorites.filter(user=user).exists():
+        if user.is_authenticated:
+            if recipe.favorites.filter(user=user).exists():
+                return Response(
+                    {'errors': 'Рецепт уже в избранном.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            Favorite.objects.create(user=user, recipe=recipe)
+            data = {
+                'id': recipe.id,
+                'name': recipe.name,
+                'image': request.build_absolute_uri(recipe.pic.url)
+                if recipe.pic else None,
+                'cooking_time': recipe.time_to_cook
+            }
+            return Response(data, status=status.HTTP_201_CREATED)
+        else:
             return Response(
-                {'errors': 'Рецепт уже в избранном.'},
-                status=status.HTTP_400_BAD_REQUEST
+                {'detail': 'Authentication credentials were not provided.'},
+                status=status.HTTP_401_UNAUTHORIZED
             )
-        Favorite.objects.create(user=user, recipe=recipe)
-        data = {
-            'id': recipe.id,
-            'name': recipe.name,
-            'image': request.build_absolute_uri(recipe.pic.url)
-            if recipe.pic else None,
-            'cooking_time': recipe.time_to_cook
-        }
-        return Response(data, status=status.HTTP_201_CREATED)
 
     @add_to_favorite.mapping.delete
     def remove_from_favorite(self, request, pk=None):
+        if not request.user.is_authenticated:
+            return Response(
+                {'detail': 'Authentication credentials were not provided.'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
         recipe = self.get_object()
         user = request.user
         instance = Favorite.objects.filter(user=user, recipe=recipe)
