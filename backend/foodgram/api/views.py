@@ -2,7 +2,7 @@ import os
 
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
-from django.http import HttpResponse
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.views.generic import RedirectView
 from djoser.views import UserViewSet as DjoserUserViewSet
@@ -198,26 +198,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(tags__slug__in=tags).distinct()
         return queryset
 
-    @action(
-        detail=True,
-        methods=['get'],
-        url_path='get-link'
-    )
-    def get_link(self, request, pk=None):
-        recipe = self.get_object()
-        if not recipe.short_link:
-            recipe.save()
-        return Response(
-            {'short-link': f'https://{DOMAIN}/s/{recipe.short_link}'}
-        )
-
-    @action(
-        detail=False,
-        methods=['get'],
-        permission_classes=[IsAuthenticated],
-        url_path='download_shopping_cart'
-    )
-    def download_shopping_cart(self, request):
+    def get_ingredients_list(self, request):
         shopping_cart = ShoppingCart.objects.filter(user=request.user)
         recipe_ids = shopping_cart.values_list('recipe', flat=True)
         ingredients = RecipeIngredient.objects.filter(
@@ -231,11 +212,37 @@ class RecipeViewSet(viewsets.ModelViewSet):
                     f'({item["ingredient__measurement_unit"]}) - '
                     f'{item["total_amount"]}')
             lines.append(line)
-        content = '\n'.join(lines)
-        response = HttpResponse(content, content_type='text/plain')
-        response['Content-Disposition'] = (
-            'attachment; filename="shopping_cart.txt"'
+        return '\n'.join(lines)
+
+    @action(
+        detail=True,
+        methods=['get'],
+        url_path='get-link'
+    )
+    def get_link(self, request, pk=None):
+        recipe = self.get_object()
+        if not recipe.short_link:
+            recipe.save()
+        return Response({'short-link': request.build_absolute_uri(
+                f'/s/{recipe.short_link}'
+         )})
+
+    @action(
+        detail=False,
+        methods=['get'],
+        permission_classes=[IsAuthenticated],
+        url_path='download_shopping_cart'
+    )
+    def download_shopping_cart(self, request):
+        content = self.get_ingredients_list(request)
+        response = FileResponse(
+            content.encode('utf-8'),
+            content_type='text/plain',
+            filename='shopping_cart.txt'
         )
+        response[
+            'Content-Disposition'
+        ] = 'attachment; filename="shopping_cart.txt"'
         return response
 
     @action(
