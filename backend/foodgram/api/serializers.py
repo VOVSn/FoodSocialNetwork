@@ -305,8 +305,8 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         return recipe
 
     def update(self, instance, validated_data):
-        ingredients_data = validated_data.pop('ingredients', None)
-        tags = validated_data.pop('tags', None)
+        ingredients_data = validated_data.pop('ingredients')
+        tags = validated_data.pop('tags')
         request = self.context.get('request')
         instance.author = request.user
         if tags is not None:
