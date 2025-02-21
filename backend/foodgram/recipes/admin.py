@@ -8,6 +8,7 @@ from .models import (
 class RecipeIngredientInline(admin.TabularInline):
     model = RecipeIngredient
     extra = 1
+    min_num = 1
     verbose_name = 'Ингредиент рецепта'
     verbose_name_plural = 'Ингредиенты рецепта'
 
