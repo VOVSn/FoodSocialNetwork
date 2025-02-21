@@ -225,7 +225,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             recipe.save()
         return Response({'short-link': request.build_absolute_uri(
                 f'/s/{recipe.short_link}'
-         )})
+        )})
 
     @action(
         detail=False,
@@ -242,7 +242,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
         response[
             'Content-Disposition'
-        ] = 'attachment; filename="shopping_cart.txt"'
+            ] = 'attachment; filename="shopping_cart.txt"'
         return response
 
     @action(
