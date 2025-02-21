@@ -3,7 +3,6 @@ import re
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db.utils import IntegrityError
-from django.shortcuts import get_object_or_404
 from djoser.serializers import UserSerializer as DjoserUserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
@@ -273,27 +272,8 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         return value
 
     def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            representation['is_favorited'] = instance.favorites.filter(
-                user=request.user
-            ).exists()
-            representation[
-                'is_in_shopping_cart'] = instance.shopping_cart.filter(
-                user=request.user
-            ).exists()
-        else:
-            representation['is_favorited'] = False
-            representation['is_in_shopping_cart'] = False
-
-        representation['tags'] = TagSerializer(instance.tags, many=True).data
-        recipe_ingredients = instance.recipe_ingredients.all()
-        representation['ingredients'] = RecipeIngredientSerializer(
-            recipe_ingredients, many=True
-        ).data
-
-        return representation
+        serializer = RecipeReadSerializer(instance, context=self.context)
+        return serializer.data
 
     def create(self, validated_data):
         ingredients_data = validated_data.pop('ingredients')
@@ -309,21 +289,18 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         tags = validated_data.pop('tags')
         request = self.context.get('request')
         instance.author = request.user
-        if tags is not None:
-            instance.tags.set(tags)
-        if ingredients_data is not None:
-            instance.recipe_ingredients.all().delete()
-            self._create_recipe_ingredients(instance, ingredients_data)
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
+        instance.tags.set(tags)
+        instance.recipe_ingredients.all().delete()
+        self._create_recipe_ingredients(instance, ingredients_data)
+        super().update(instance, validated_data)
         return instance
 
     def _create_recipe_ingredients(self, recipe, ingredients_data):
-        for ingredient in ingredients_data:
-            ingredient_id = ingredient.get('id')
-            amount = ingredient.get('amount')
-            ingredient_obj = get_object_or_404(Ingredient, id=ingredient_id)
-            RecipeIngredient.objects.create(
-                recipe=recipe, ingredient=ingredient_obj, amount=amount
-            )
+        recipe_ingredients = [
+            RecipeIngredient(
+                recipe=recipe,
+                ingredient_id=ingredient.get('id'),
+                amount=ingredient.get('amount')
+            ) for ingredient in ingredients_data
+        ]
+        RecipeIngredient.objects.bulk_create(recipe_ingredients)
