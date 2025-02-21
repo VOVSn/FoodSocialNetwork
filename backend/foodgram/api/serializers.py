@@ -210,48 +210,27 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     image = Base64ImageField(source='pic')
     text = serializers.CharField(source='description')
     cooking_time = serializers.IntegerField(source='time_to_cook')
-    is_favorited = serializers.SerializerMethodField()
-    is_in_shopping_cart = serializers.SerializerMethodField()
     author = UserSerializer(read_only=True)
 
     class Meta:
         model = Recipe
         fields = (
-            'id', 'tags', 'author', 'ingredients', 'is_favorited',
-            'is_in_shopping_cart', 'name', 'image', 'text', 'cooking_time'
+            'id', 'tags', 'author', 'ingredients', 'name', 'image', 'text',
+            'cooking_time'
         )
-
-    def get_is_favorited(self, obj):
-        request = self.context.get('request')
-        if not request or request.user.is_anonymous:
-            return False
-        return obj.favorites.filter(user=request.user).exists()
-
-    def get_is_in_shopping_cart(self, obj):
-        request = self.context.get('request')
-        if not request or request.user.is_anonymous:
-            return False
-        return obj.shopping_cart.filter(user=request.user).exists()
 
     def validate(self, data):
         if 'ingredients' not in data or not data['ingredients']:
             raise serializers.ValidationError('Ингредиенты обязательны.')
         if 'tags' not in data or not data['tags']:
             raise serializers.ValidationError('Теги обязательны.')
-        return data
-
-    def validate_cooking_time(self, value):
-        if value < 1:
+        ingredients_data = data.get('ingredients')
+        ingredient_ids = [
+            ingredient.get('id') for ingredient in ingredients_data]
+        if len(ingredient_ids) != len(set(ingredient_ids)):
             raise serializers.ValidationError(
-                'Время приготовления должно быть >= 1'
-            )
-        return value
+                'Ингредиенты не могут повторяться.')
 
-    def validate_ingredients(self, ingredients_data):
-        if not ingredients_data:
-            raise serializers.ValidationError(
-                'Ингредиенты не могут быть пустыми.'
-            )
         seen_ingredients = set()
         for ingredient in ingredients_data:
             ingredient_id = ingredient.get('id')
@@ -270,21 +249,21 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     f'Ингредиент с id {ingredient_id} не существует.'
                 )
-            if ingredient_id in seen_ingredients:
-                raise serializers.ValidationError(
-                    'Ингредиенты не могут повторяться.'
-                )
             seen_ingredients.add(ingredient_id)
-        return ingredients_data
 
-    def validate_tags(self, tags):
-        if not tags:
-            raise serializers.ValidationError('Теги не могут быть пустыми.')
+        tags = data.get('tags')
         tag_ids = [tag.id for tag in tags]
         if len(tag_ids) != len(set(tag_ids)):
             raise serializers.ValidationError('Теги не могут повторяться.')
 
-        return tags
+        return data
+
+    def validate_cooking_time(self, value):
+        if value < settings.MIN_TIME_TO_COOK:
+            raise serializers.ValidationError(
+                f'Время должно быть >= {settings.MIN_TIME_TO_COOK}'
+            )
+        return value
 
     def validate_image(self, value):
         if not value:
@@ -295,6 +274,19 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            representation['is_favorited'] = instance.favorites.filter(
+                user=request.user
+            ).exists()
+            representation[
+                'is_in_shopping_cart'] = instance.shopping_cart.filter(
+                user=request.user
+            ).exists()
+        else:
+            representation['is_favorited'] = False
+            representation['is_in_shopping_cart'] = False
+
         representation['tags'] = TagSerializer(instance.tags, many=True).data
         recipe_ingredients = instance.recipe_ingredients.all()
         representation['ingredients'] = RecipeIngredientSerializer(
