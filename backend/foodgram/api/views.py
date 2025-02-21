@@ -9,10 +9,12 @@ from djoser.views import UserViewSet as DjoserUserViewSet
 from dotenv import load_dotenv
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated, SAFE_METHODS
+from rest_framework.permissions import (
+AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly, SAFE_METHODS
+)
 from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
 
+from api.paginations import FoodGramPagination
 from api.permissions import IsAuthorOrReadOnly
 from api.serializers import (
     SubscriptionSerializer, UserAvatarSerializer, PasswordChangeSerializer,
@@ -32,14 +34,9 @@ DOMAIN = os.getenv('DOMAIN', 'localhost')
 User = get_user_model()
 
 
-class CustomPagination(PageNumberPagination):
-    page_size_query_param = 'limit'
-    page_size = 6
-
-
 class UserViewSet(DjoserUserViewSet):
     queryset = User.objects.all()
-    pagination_class = CustomPagination
+    pagination_class = FoodGramPagination
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve', 'create']:
@@ -47,27 +44,6 @@ class UserViewSet(DjoserUserViewSet):
         else:
             permission_classes = [IsAuthenticated]
         return [permission() for permission in permission_classes]
-
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(
-                page, many=True, context={'request': request}
-            )
-            return self.get_paginated_response(serializer.data)
-        serializer = self.get_serializer(
-            queryset, many=True, context={'request': request}
-        )
-        return Response(serializer.data)
-
-    def get_paginated_response(self, data):
-        return Response({
-            'count': self.paginator.page.paginator.count,
-            'next': self.paginator.get_next_link(),
-            'previous': self.paginator.get_previous_link(),
-            'results': data
-        })
 
     @action(
         detail=False,
@@ -196,7 +172,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
-    pagination_class = CustomPagination
+    pagination_class = FoodGramPagination
 
     def get_serializer_class(self):
         if self.request.method in SAFE_METHODS:
