@@ -58,12 +58,11 @@ class UserViewSet(DjoserUserViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data)
-        if request.method == 'DELETE':
-            if user.avatar:
-                user.avatar.delete(save=False)
-            user.avatar = None
-            user.save(update_fields=['avatar'])
-            return Response(status=status.HTTP_204_NO_CONTENT)
+        if user.avatar:
+            user.avatar.delete(save=False)
+        user.avatar = None
+        user.save(update_fields=['avatar'])
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
         detail=False,
@@ -98,15 +97,10 @@ class UserViewSet(DjoserUserViewSet):
             subscribers__subscriber=request.user
         )
         page = self.paginate_queryset(subscriptions)
-        if page is not None:
-            serializer = SubscriptionSerializer(
-                page, many=True, context={'request': request}
-            )
-            return self.get_paginated_response(serializer.data)
         serializer = SubscriptionSerializer(
-            subscriptions, many=True, context={'request': request}
+            page, many=True, context={'request': request}
         )
-        return Response(serializer.data)
+        return self.get_paginated_response(serializer.data)
 
     @action(
         detail=True,
