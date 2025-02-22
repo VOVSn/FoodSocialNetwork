@@ -168,21 +168,12 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     pagination_class = FoodGramPagination
+    permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
 
     def get_serializer_class(self):
         if self.request.method in SAFE_METHODS:
             return RecipeReadSerializer
         return RecipeWriteSerializer
-
-    def get_permissions(self):
-        if self.action in ['create', 'shopping_cart', 'favorite',
-                           'download_shopping_cart']:
-            permission_classes = [IsAuthenticated]
-        elif self.action in ['update', 'partial_update', 'destroy']:
-            permission_classes = [IsAuthenticated, IsAuthorOrReadOnly]
-        else:
-            permission_classes = []
-        return [permission() for permission in permission_classes]
 
     def get_queryset(self):
         queryset = Recipe.objects.all()
