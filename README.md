@@ -7,109 +7,170 @@
 
 ### Описание проекта:
 
-Данный проект является обучающим проектом по работе с Django REST Framework с практикой разворачивания в контейнерах Docker и CI/CD автоматизации.
+  Данный проект является обучающим проектом по работе с Django REST Framework с практикой разворачивания в контейнерах Docker и CI/CD автоматизации.
+
 ### Автор проекта:
 
-Данный проект был разработан [Vladimir Korolev](https://github.com/VOVSn)
+  Данный проект был разработан [Vladimir Korolev](https://github.com/VOVSn)
+
+  Рабочая версия проекта доступна по адресу:
+
+  [FOODGRAM](https://foodgram.vovsn.com)
+
+  API документация к проекту доступна по адресу:
+
+  [Redoc документация Фудграм](https://foodgram.vovsn.com/api/docs/)
+
 
 ### Использованные технологии:
 
-В данном проекте используются технологии:
+  В данном проекте используются технологии:
 
-[Django](https://www.djangoproject.com/)
+  [Django](https://www.djangoproject.com/)
 
-[Django rest framework](https://www.django-rest-framework.org/)
+  [Django rest framework](https://www.django-rest-framework.org/)
 
-Для промышленной реализации проекта используются:
+  Для промышленной реализации проекта используются:
 
-[Gunicorn](https://docs.gunicorn.org/en/stable/index.html)
+  [Gunicorn](https://docs.gunicorn.org/en/stable/index.html)
 
-[Nginx](https://nginx.org/en/docs/)
+  [Nginx](https://nginx.org/en/docs/)
 
-Для контейнеризации и сборки образов используются:
+  Для контейнеризации и сборки образов используются:
 
-[Docker](https://docs.docker.com/manuals/)
+  [Docker](https://docs.docker.com/manuals/)
 
-[Docker HUB](https://docs.docker.com/docker-hub/)
+  [Docker HUB](https://docs.docker.com/docker-hub/)
 
-Для автоматизации CI/CD используются:
+  Для автоматизации CI/CD используются:
 
-[Git Hub Actions](https://docs.github.com/ru/actions/about-github-actions/understanding-github-actions)
+  [Git Hub Actions](https://docs.github.com/ru/actions/about-github-actions/understanding-github-actions)
+
+
 
 ### В бэкэнде проекта использовались следующие библиотеки:
-Django, djangorestframework, djoser, webcolors, psycopg2-binary,
-Pillow, pytest, pytest-django, pytest-pythonpath, PyYAML
- версии библиотек указаны в requirements.txt
+  Django, djangorestframework, djoser, Pillow, psycopg2-binary, PyJWT,
+  python-dotenv PyYAML.
+  версии библиотек а также остальные зависимости указаны в requirements.txt
 
 
 ### Переменные окружения:
 
-Для работы проекта необходим файл (.env) с переменными окружения следующего вида:
+  Для работы проекта необходим файл (.env) с переменными окружения следующего вида:
 
-POSTGRES_DB=<name>
+  POSTGRES_DB=<name>
 
-POSTGRES_USER=<db_user>
+  POSTGRES_USER=<db_user>
 
-POSTGRES_PASSWORD=<db_password>
+  POSTGRES_PASSWORD=<db_password>
 
-DB_HOST=<db_container_name>
+  DB_HOST=<db_container_name>
 
-DB_PORT=5432
+  DB_PORT=5432
 
-SECRET_KEY="django-insecure-secret-key-example-12345"
+  SECRET_KEY="django-insecure-secret-key-example-12345"
 
-ALLOWED_HOSTS=<domain_name.tld>, <IP>
+  ALLOWED_HOSTS=<domain_name.tld>, <IP>
 
-DOMAIN="localhost"
+  DOMAIN="localhost"
+
+  DEBUG=True
+
+  DB_ENGINE=PG
 
 ### Как запустить проект локально:
 
-Клонировать репозиторий и перейти в него в командной строке:
+  Клонировать репозиторий и перейти в него в командной строке:
 
-```
-git clone git@github.com:vovsn/foodgram.git
-```
+  ```
+  git clone git@github.com:vovsn/foodgram.git
+  ```
 
-```
-cd foodgram
-```
+  ```
+  cd foodgram
+  ```
 
-Cоздать и активировать виртуальное окружение:
+  Cоздать и активировать виртуальное окружение:
 
-```
-python3 -m venv env
-```
+  ```
+  python -m venv env
+  ```
 
-```
-source env/bin/activate
-```
+  ```
+  source env/bin/activate
+  ```
 
-Установить зависимости из файла requirements.txt:
+  Установить зависимости из файла requirements.txt:
 
-```
-python3 -m pip install --upgrade pip
-```
+  ```
+  python -m pip install --upgrade pip
+  ```
 
-```
-pip install -r requirements.txt
-```
+  ```
+  pip install -r requirements.txt
+  ```
 
-Выполнить миграции:
+  Выполнить миграции:
 
-```
-python3 manage.py migrate
-```
+  ```
+  python manage.py migrate
+  ```
 
-Запустить проект:
+  Запустить проект:
+  ```
+  python manage.py runserver
+  ```
+  Импортировать данные табюлицы ингредиентов:
+  ```
+  python manage.py import_csv_data
+  ```
 
-```
-python3 manage.py runserver
-```
+
+
+### Как запустить проект в контейнерах:
+
+  ```
+  cd infra
+  docker compose up -d
+  ```
+### Для промышленного запуска проекта необходимо:
+
+  Скачать последние образы с DocherHub:
+  ```
+  docker compose -f docker-compose.production.yml pull
+  ```
+
+  Остановить текущие рабочие контейнеры и удалить их:
+  ```
+  docker compose -f docker-compose.production.yml down
+  ```
+
+  Запустить проект:
+  ```
+  docker compose -f docker-compose.production.yml up -d
+  ```
+
+  Применить миграции:
+  ```
+  docker compose -f docker-compose.production.yml exec backend python manage.py migrate
+  ```
+
+  Собрать статику:
+  ```
+  docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic 
+  ```
+
+  Импортировать данные табюлицы ингредиентов:
+  ```
+  docker compose -f docker-compose.production.yml exec backend python manage.py import_csv_data
+  ```
+
+
 
 ###
 # Примеры запросов:
 
-### Получение списка cats:
+### Получение списка recipes:
 
 ```
 curl -X GET \

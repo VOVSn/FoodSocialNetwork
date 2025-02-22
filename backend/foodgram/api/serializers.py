@@ -342,7 +342,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         RecipeIngredient.objects.bulk_create(recipe_ingredients)
 
 
-class ShoppingCartCreateSerializer(serializers.ModelSerializer):
+class ShoppingCartSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShoppingCart
         fields = ('recipe',)
@@ -379,7 +379,7 @@ class ShoppingCartCreateSerializer(serializers.ModelSerializer):
         }
 
 
-class FavoriteCreateSerializer(serializers.ModelSerializer):
+class FavoriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Favorite
         fields = ('recipe',)
