@@ -10,7 +10,9 @@ from djoser.views import UserViewSet as DjoserUserViewSet
 from dotenv import load_dotenv
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated, SAFE_METHODS
+from rest_framework.permissions import (
+    IsAuthenticated, IsAuthenticatedOrReadOnly, SAFE_METHODS
+)
 from rest_framework.response import Response
 
 from api.paginations import FoodGramPagination
@@ -36,13 +38,15 @@ User = get_user_model()
 class UserViewSet(DjoserUserViewSet):
     queryset = User.objects.all()
     pagination_class = FoodGramPagination
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve', 'create']:
-            permission_classes = []
-        else:
-            permission_classes = [IsAuthenticated]
-        return [permission() for permission in permission_classes]
+    @action(
+        detail=False,
+        permission_classes=[IsAuthenticated],
+        url_path='me'
+    )
+    def me(self, request, *args, **kwargs):
+        return super().me(request, *args, **kwargs)
 
     @action(
         detail=False,
@@ -147,13 +151,11 @@ class UserViewSet(DjoserUserViewSet):
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    permission_classes = [AllowAny]
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    permission_classes = [AllowAny]
 
     def get_queryset(self):
         queryset = super().get_queryset()
