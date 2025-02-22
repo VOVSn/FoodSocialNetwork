@@ -8,7 +8,10 @@ from djoser.serializers import UserSerializer as DjoserUserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
-from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
+from recipes.models import (
+    Favorite, Ingredient, Recipe, RecipeIngredient, ShoppingCart, Tag
+)
+from users.models import Subscription
 
 
 User = get_user_model()
@@ -70,6 +73,36 @@ class SubscriptionSerializer(UserSerializer):
             recipes_qs, many=True, context=self.context
         )
         return serializer.data
+
+
+class SubscriptionCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subscription
+        fields = ('author',)
+
+    def validate_author(self, author):
+        user = self.context['request'].user
+        if user == author:
+            raise serializers.ValidationError(
+                'Нельзя подписаться на самого себя.')
+        if Subscription.objects.filter(
+            subscriber=user,
+            author=author
+        ).exists():
+            raise serializers.ValidationError(
+                'Вы уже подписаны на этого автора.')
+        return author
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        author = validated_data['author']
+        return Subscription.objects.create(subscriber=user, author=author)
+
+    def to_representation(self, instance):
+        request = self.context.get('request')
+        return SubscriptionSerializer(
+            instance.author, context={'request': request}
+        ).data
 
 
 class UserAvatarSerializer(serializers.ModelSerializer):
@@ -307,3 +340,76 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             ) for ingredient in ingredients_data
         ]
         RecipeIngredient.objects.bulk_create(recipe_ingredients)
+
+
+class ShoppingCartCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShoppingCart
+        fields = ('recipe',)
+
+    def validate_recipe(self, recipe):
+        user = self.context['request'].user
+        if ShoppingCart.objects.filter(user=user, recipe=recipe).exists():
+            raise serializers.ValidationError('Рецепт уже в списке покупок.')
+        return recipe
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        recipe = validated_data['recipe']
+        return ShoppingCart.objects.create(user=user, recipe=recipe)
+
+    def delete(self, validated_data):
+        user = self.context['request'].user
+        recipe = validated_data['recipe']
+        shopping_cart_item = ShoppingCart.objects.filter(
+            user=user, recipe=recipe)
+        if shopping_cart_item.exists():
+            shopping_cart_item.delete()
+            return True
+        return False
+
+    def to_representation(self, instance):
+        request = self.context.get('request')
+        return {
+            'id': instance.recipe.id,
+            'name': instance.recipe.name,
+            'image': request.build_absolute_uri(instance.recipe.pic.url)
+            if instance.recipe.pic else None,
+            'cooking_time': instance.recipe.time_to_cook
+        }
+
+
+class FavoriteCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Favorite
+        fields = ('recipe',)
+
+    def validate_recipe(self, recipe):
+        user = self.context['request'].user
+        if Favorite.objects.filter(user=user, recipe=recipe).exists():
+            raise serializers.ValidationError('Рецепт уже в избранном.')
+        return recipe
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        recipe = validated_data['recipe']
+        return Favorite.objects.create(user=user, recipe=recipe)
+
+    def delete(self, validated_data):
+        user = self.context['request'].user
+        recipe = validated_data['recipe']
+        favorite_item = Favorite.objects.filter(user=user, recipe=recipe)
+        if favorite_item.exists():
+            favorite_item.delete()
+            return True
+        return False
+
+    def to_representation(self, instance):
+        request = self.context.get('request')
+        return {
+            'id': instance.recipe.id,
+            'name': instance.recipe.name,
+            'image': request.build_absolute_uri(instance.recipe.pic.url)
+            if instance.recipe.pic else None,
+            'cooking_time': instance.recipe.time_to_cook
+        }

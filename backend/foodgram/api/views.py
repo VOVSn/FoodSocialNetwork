@@ -20,10 +20,11 @@ from api.permissions import IsAuthorOrReadOnly
 from api.serializers import (
     SubscriptionSerializer, UserAvatarSerializer, PasswordChangeSerializer,
     TagSerializer, IngredientSerializer, RecipeWriteSerializer,
-    RecipeReadSerializer
+    RecipeReadSerializer, SubscriptionCreateSerializer,
+    ShoppingCartCreateSerializer, FavoriteCreateSerializer
 )
 from recipes.models import (
-    Favorite, Ingredient, Recipe, RecipeIngredient, ShoppingCart, Tag
+    Ingredient, Recipe, RecipeIngredient, ShoppingCart, Tag
 )
 from users.models import Subscription
 
@@ -112,24 +113,12 @@ class UserViewSet(DjoserUserViewSet):
         url_path='subscribe'
     )
     def subscribe(self, request, id=None):
-        user = request.user
         author = get_object_or_404(User, pk=id)
-        if user == author:
-            return Response(
-                {'errors': 'Нельзя подписаться на самого себя.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        if Subscription.objects.filter(
-            subscriber=user, author=author
-        ).exists():
-            return Response(
-                {'errors': 'Вы уже подписаны на этого автора.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        Subscription.objects.create(subscriber=user, author=author)
-        serializer = SubscriptionSerializer(
-            author, context={'request': request}
+        serializer = SubscriptionCreateSerializer(
+            data={'author': author.id}, context={'request': request}
         )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
@@ -244,40 +233,20 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def add_to_shopping_cart(self, request, pk=None):
         recipe = self.get_object()
-        user = request.user
-        if user.is_authenticated:
-            if recipe.shopping_cart.filter(user=user).exists():
-                return Response(
-                    {'errors': 'Рецепт уже в списке покупок.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            ShoppingCart.objects.create(user=user, recipe=recipe)
-            data = {
-                'id': recipe.id,
-                'name': recipe.name,
-                'image': request.build_absolute_uri(recipe.pic.url)
-                if recipe.pic else None,
-                'cooking_time': recipe.time_to_cook
-            }
-            return Response(data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(
-                {'detail': 'Authentication credentials were not provided.'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
+        serializer = ShoppingCartCreateSerializer(
+            data={'recipe': recipe.id}, context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @add_to_shopping_cart.mapping.delete
     def remove_from_shopping_cart(self, request, pk=None):
-        if not request.user.is_authenticated:
-            return Response(
-                {'detail': 'Authentication credentials were not provided.'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
         recipe = self.get_object()
-        user = request.user
-        instance = ShoppingCart.objects.filter(user=user, recipe=recipe)
-        if instance.exists():
-            instance.delete()
+        serializer = ShoppingCartCreateSerializer(
+            data={'recipe': recipe.id}, context={'request': request}
+        )
+        if serializer.delete({'recipe': recipe}):
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(
             {'errors': 'Рецепт отсутствует в списке покупок.'},
@@ -292,40 +261,20 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def add_to_favorite(self, request, pk=None):
         recipe = self.get_object()
-        user = request.user
-        if user.is_authenticated:
-            if recipe.favorites.filter(user=user).exists():
-                return Response(
-                    {'errors': 'Рецепт уже в избранном.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            Favorite.objects.create(user=user, recipe=recipe)
-            data = {
-                'id': recipe.id,
-                'name': recipe.name,
-                'image': request.build_absolute_uri(recipe.pic.url)
-                if recipe.pic else None,
-                'cooking_time': recipe.time_to_cook
-            }
-            return Response(data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(
-                {'detail': 'Authentication credentials were not provided.'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
+        serializer = FavoriteCreateSerializer(
+            data={'recipe': recipe.id}, context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @add_to_favorite.mapping.delete
     def remove_from_favorite(self, request, pk=None):
-        if not request.user.is_authenticated:
-            return Response(
-                {'detail': 'Authentication credentials were not provided.'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
         recipe = self.get_object()
-        user = request.user
-        instance = Favorite.objects.filter(user=user, recipe=recipe)
-        if instance.exists():
-            instance.delete()
+        serializer = FavoriteCreateSerializer(
+            data={'recipe': recipe.id}, context={'request': request}
+        )
+        if serializer.delete({'recipe': recipe}):
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(
             {'errors': 'Рецепт отсутствует в избранном.'},
