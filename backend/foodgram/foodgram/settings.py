@@ -130,9 +130,6 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ],
 }
 
 DJOSER = {
@@ -144,6 +141,7 @@ DJOSER = {
         'user': 'api.serializers.UserSerializer',
         'current_user': 'api.serializers.UserSerializer',
     },
+    'PERMISSIONS': {'user_list': ['rest_framework.permissions.AllowAny'],}
 }
 
 # API settings
@@ -168,3 +166,6 @@ MIN_TIME_TO_COOK = 1
 
 MIN_INGR_AMOUNT = 1
 
+PAGE_SIZE = 6 
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 20971520
