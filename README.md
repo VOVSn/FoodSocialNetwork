@@ -57,7 +57,7 @@
 ### Переменные окружения:
 
   Для работы проекта необходим файл (.env) с переменными окружения следующего вида:
-
+```
   POSTGRES_DB=<name>
 
   POSTGRES_USER=<db_user>
@@ -77,7 +77,7 @@
   DEBUG=True
 
   DB_ENGINE=PG
-
+```
 ### Как запустить проект локально:
 
   Клонировать репозиторий и перейти в него в командной строке:
@@ -160,7 +160,7 @@
   docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic 
   ```
 
-  Импортировать данные табюлицы ингредиентов:
+  Импортировать данные таблицы ингредиентов:
   ```
   docker compose -f docker-compose.production.yml exec backend python manage.py import_csv_data
   ```
