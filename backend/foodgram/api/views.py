@@ -1,3 +1,4 @@
+import io
 import os
 
 from django.contrib.auth import get_user_model
@@ -235,14 +236,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def download_shopping_cart(self, request):
         content = self.get_ingredients_list(request)
-        response = FileResponse(
-            content.encode('utf-8'),
-            content_type='text/plain',
-            filename='shopping_cart.txt'
-        )
+        content_bytes = content.encode('utf-8')
+        file = io.BytesIO(content_bytes)
+        response = FileResponse(file, content_type='text/plain')
         response[
-            'Content-Disposition'
-        ] = 'attachment; filename="shopping_cart.txt"'
+            'Content-Disposition'] = 'attachment; filename="shopping_cart.txt"'
         return response
 
     @action(
