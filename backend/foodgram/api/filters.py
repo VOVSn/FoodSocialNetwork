@@ -1,6 +1,7 @@
 import django_filters
-from recipes.models import Recipe
 from django_filters import AllValuesMultipleFilter
+
+from recipes.models import Recipe
 
 
 class RecipeFilter(django_filters.FilterSet):
