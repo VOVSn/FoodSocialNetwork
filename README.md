@@ -120,7 +120,7 @@
   ```
   python manage.py runserver
   ```
-  Импортировать данные табюлицы ингредиентов:
+  Импортировать данные таблицы ингредиентов:
   ```
   python manage.py import_csv_data
   ```
@@ -174,7 +174,7 @@
 
 ```
 curl -X GET \
-  http://foodgram.vovsn.com/api/recipes/ \
+  http://foodgram.vovsn.com/api/recipes/
 ```
 ### Пример ответа:
 
@@ -200,7 +200,7 @@ curl -X GET \
         "first_name": "Вася",
         "last_name": "Иванов",
         "is_subscribed": false,
-        "avatar": "http://foodgram.example.org/media/users/image.png"
+        "avatar": "http://foodgram.vovsn.com/media/users/image.png"
       },
       "ingredients": [
         {
@@ -213,7 +213,7 @@ curl -X GET \
       "is_favorited": true,
       "is_in_shopping_cart": true,
       "name": "string",
-      "image": "http://foodgram.example.org/media/recipes/images/image.png",
+      "image": "http://foodgram.vovsn.com/media/recipes/images/image.png",
       "text": "string",
       "cooking_time": 1
     }
