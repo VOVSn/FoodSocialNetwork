@@ -207,7 +207,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def _add_or_remove_from_list(self, request, pk, model, serializer_class):
         recipe = self.get_object()
         serializer = serializer_class(
-            data={'recipe': recipe.id}, context={'request': request}
+            data={'recipe': recipe.id, 'user': request.user.id},
+            context={'request': request}
         )
         if request.method == 'POST':
             serializer.is_valid(raise_exception=True)

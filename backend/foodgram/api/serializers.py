@@ -330,18 +330,13 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
 class RecipeActionSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = ('recipe',)
+        fields = ('recipe', 'user')
 
     def validate_recipe(self, recipe):
         user = self.context['request'].user
         if self.Meta.model.objects.filter(user=user, recipe=recipe).exists():
             raise serializers.ValidationError('Рецепт уже в списке покупок.')
         return recipe
-
-    def create(self, validated_data):
-        user = self.context['request'].user
-        recipe = validated_data['recipe']
-        return self.Meta.model.objects.create(user=user, recipe=recipe)
 
     def delete(self, validated_data):
         user = self.context['request'].user
