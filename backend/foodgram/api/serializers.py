@@ -1,7 +1,6 @@
 import re
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import AnonymousUser
 from django.db.utils import IntegrityError
 from djoser.serializers import UserSerializer as DjoserUserSerializer
 from drf_extra_fields.fields import Base64ImageField
@@ -43,8 +42,6 @@ class UserSerializer(DjoserUserSerializer):
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
-        if isinstance(request.user, AnonymousUser):
-            return False
         return (
             request.user.is_authenticated
             and obj.subscribers.filter(subscriber=request.user).exists()

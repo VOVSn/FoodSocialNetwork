@@ -1,18 +1,18 @@
 import io
 import os
 
-from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.views.generic import RedirectView
+from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
 from dotenv import load_dotenv
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import (
-    IsAuthenticated, IsAuthenticatedOrReadOnly, SAFE_METHODS
+    SAFE_METHODS, IsAuthenticatedOrReadOnly, IsAuthenticated
 )
 from rest_framework.response import Response
 
