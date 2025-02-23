@@ -275,8 +275,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             seen_ingredients.add(ingredient_id)
 
         tags = data.get('tags')
-        tag_ids = [tag.id for tag in tags]
-        if len(tag_ids) != len(set(tag_ids)):
+        if len(tags) != len(set(tags)):
             raise serializers.ValidationError('Теги не могут повторяться.')
 
         return data
@@ -316,8 +315,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         instance.tags.set(tags)
         instance.recipe_ingredients.all().delete()
         self._create_recipe_ingredients(instance, ingredients_data)
-        super().update(instance, validated_data)
-        return instance
+        return super().update(instance, validated_data)
 
     def _create_recipe_ingredients(self, recipe, ingredients_data):
         recipe_ingredients = [
@@ -330,74 +328,42 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         RecipeIngredient.objects.bulk_create(recipe_ingredients)
 
 
-class ShoppingCartSerializer(serializers.ModelSerializer):
+class RecipeActionSerializer(serializers.ModelSerializer):
     class Meta:
-        model = ShoppingCart
         fields = ('recipe',)
 
     def validate_recipe(self, recipe):
         user = self.context['request'].user
-        if ShoppingCart.objects.filter(user=user, recipe=recipe).exists():
+        if self.Meta.model.objects.filter(user=user, recipe=recipe).exists():
             raise serializers.ValidationError('Рецепт уже в списке покупок.')
         return recipe
 
     def create(self, validated_data):
         user = self.context['request'].user
         recipe = validated_data['recipe']
-        return ShoppingCart.objects.create(user=user, recipe=recipe)
+        return self.Meta.model.objects.create(user=user, recipe=recipe)
 
     def delete(self, validated_data):
         user = self.context['request'].user
         recipe = validated_data['recipe']
-        shopping_cart_item = ShoppingCart.objects.filter(
-            user=user, recipe=recipe)
-        if shopping_cart_item.exists():
-            shopping_cart_item.delete()
+        action_item = self.Meta.model.objects.filter(user=user, recipe=recipe)
+        if action_item.exists():
+            action_item.delete()
             return True
         return False
 
     def to_representation(self, instance):
         request = self.context.get('request')
-        return {
-            'id': instance.recipe.id,
-            'name': instance.recipe.name,
-            'image': request.build_absolute_uri(instance.recipe.pic.url)
-            if instance.recipe.pic else None,
-            'cooking_time': instance.recipe.time_to_cook
-        }
+        return RecipeShortSerializer(
+            instance.recipe, context={'request': request}
+        ).data
 
 
-class FavoriteSerializer(serializers.ModelSerializer):
-    class Meta:
+class ShoppingCartSerializer(RecipeActionSerializer):
+    class Meta(RecipeActionSerializer.Meta):
+        model = ShoppingCart
+
+
+class FavoriteSerializer(RecipeActionSerializer):
+    class Meta(RecipeActionSerializer.Meta):
         model = Favorite
-        fields = ('recipe',)
-
-    def validate_recipe(self, recipe):
-        user = self.context['request'].user
-        if Favorite.objects.filter(user=user, recipe=recipe).exists():
-            raise serializers.ValidationError('Рецепт уже в избранном.')
-        return recipe
-
-    def create(self, validated_data):
-        user = self.context['request'].user
-        recipe = validated_data['recipe']
-        return Favorite.objects.create(user=user, recipe=recipe)
-
-    def delete(self, validated_data):
-        user = self.context['request'].user
-        recipe = validated_data['recipe']
-        favorite_item = Favorite.objects.filter(user=user, recipe=recipe)
-        if favorite_item.exists():
-            favorite_item.delete()
-            return True
-        return False
-
-    def to_representation(self, instance):
-        request = self.context.get('request')
-        return {
-            'id': instance.recipe.id,
-            'name': instance.recipe.name,
-            'image': request.build_absolute_uri(instance.recipe.pic.url)
-            if instance.recipe.pic else None,
-            'cooking_time': instance.recipe.time_to_cook
-        }
