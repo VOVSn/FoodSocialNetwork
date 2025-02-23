@@ -1,31 +1,26 @@
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib import admin
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import UniqueConstraint
 from django.db.models.functions import Lower
-from django.utils.crypto import get_random_string
+
+from foodgram import constants as c
+from recipes.service import generate_unique_short_link
+
 
 User = get_user_model()
 
 
-def generate_unique_short_link():
-    while True:
-        candidate = get_random_string(settings.SHORT_LINK_LENGTH)
-        if not Recipe.objects.filter(short_link=candidate).exists():
-            return candidate
-
-
 class Tag(models.Model):
     name = models.CharField(
-        max_length=settings.TAG_NAME_MAX_LENGTH,
+        max_length=c.TAG_NAME_MAX_LENGTH,
         unique=True,
         verbose_name='Название',
         help_text='Введите название тега'
     )
     slug = models.SlugField(
-        max_length=settings.TAG_SLUG_MAX_LENGTH,
+        max_length=c.TAG_SLUG_MAX_LENGTH,
         unique=True,
         verbose_name='Слаг',
         help_text='Введите слаг для тега'
@@ -42,13 +37,13 @@ class Tag(models.Model):
 
 class Ingredient(models.Model):
     name = models.CharField(
-        max_length=settings.INGREDIENT_NAME_MAX_LENGTH,
+        max_length=c.INGREDIENT_NAME_MAX_LENGTH,
         unique=True,
         verbose_name='Название',
         help_text='Введите название ингредиента'
     )
     measurement_unit = models.CharField(
-        max_length=settings.INGREDIENT_UNIT_MAX_LENGTH,
+        max_length=c.INGREDIENT_UNIT_MAX_LENGTH,
         verbose_name='Единица измерения',
         help_text='Введите единицу измерения ингредиента'
     )
@@ -77,7 +72,7 @@ class Recipe(models.Model):
         help_text='Выберите автора рецепта'
     )
     name = models.CharField(
-        max_length=settings.RECIPE_NAME_MAX_LENGTH,
+        max_length=c.RECIPE_NAME_MAX_LENGTH,
         unique=True,
         verbose_name='Название',
         help_text='Введите название рецепта'
@@ -100,7 +95,7 @@ class Recipe(models.Model):
         help_text='Выберите теги для рецепта'
     )
     time_to_cook = models.PositiveIntegerField(
-        validators=[MinValueValidator(settings.MIN_TIME_TO_COOK)],
+        validators=[MinValueValidator(c.MIN_TIME_TO_COOK)],
         verbose_name='Время приготовления',
         help_text='Введите время приготовления в минутах'
     )
@@ -112,7 +107,7 @@ class Recipe(models.Model):
         help_text='Добавьте ингредиенты рецепта'
     )
     short_link = models.CharField(
-        max_length=settings.SHORT_LINK_LENGTH,
+        max_length=c.SHORT_LINK_LENGTH,
         unique=True,
         blank=True,
         null=True,
@@ -151,7 +146,7 @@ class RecipeIngredient(models.Model):
         verbose_name='Ингредиент',
         help_text='Выберите ингредиент'
     )
-    amount = models.FloatField(
+    amount = models.IntegerField(
         verbose_name='Количество',
         help_text='Введите количество ингредиента'
     )

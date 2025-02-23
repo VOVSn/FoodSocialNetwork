@@ -1,18 +1,18 @@
 import io
 import os
 
-from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.views.generic import RedirectView
+from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
 from dotenv import load_dotenv
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import (
-    IsAuthenticated, IsAuthenticatedOrReadOnly, SAFE_METHODS
+    SAFE_METHODS, IsAuthenticatedOrReadOnly, IsAuthenticated
 )
 from rest_framework.response import Response
 
@@ -20,10 +20,10 @@ from api.filters import RecipeFilter
 from api.paginations import FoodGramPagination
 from api.permissions import IsAuthorOrReadOnly
 from api.serializers import (
-    SubscriptionSerializer, UserAvatarSerializer, PasswordChangeSerializer,
-    TagSerializer, IngredientSerializer, RecipeWriteSerializer,
-    RecipeReadSerializer, SubscriptionCreateSerializer,
-    ShoppingCartSerializer, FavoriteSerializer
+    FavoriteSerializer, IngredientSerializer, PasswordChangeSerializer,
+    RecipeReadSerializer, RecipeWriteSerializer, ShoppingCartSerializer,
+    SubscriptionSerializer, SubscriptionCreateSerializer, TagSerializer,
+    UserAvatarSerializer
 )
 from recipes.models import (
     Favorite, Ingredient, Recipe, RecipeIngredient, ShoppingCart, Tag
@@ -116,11 +116,12 @@ class UserViewSet(DjoserUserViewSet):
     )
     def subscribe(self, request, id=None):
         author = get_object_or_404(User, pk=id)
+        data = {'author': author.id}
         serializer = SubscriptionCreateSerializer(
-            data={'author': author.id}, context={'request': request}
+            data=data, context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        serializer.save(subscriber=request.user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
@@ -176,6 +177,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ).values(
             'ingredient__name', 'ingredient__measurement_unit'
         ).annotate(total_amount=Sum('amount'))
+        return ingredients
+
+    def format_ingredients_to_text(self, ingredients):
         lines = []
         for item in ingredients:
             line = (f'{item["ingredient__name"]} '
@@ -185,26 +189,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return '\n'.join(lines)
 
     @action(
-        detail=True,
-        methods=['get'],
-        url_path='get-link'
-    )
-    def get_link(self, request, pk=None):
-        recipe = self.get_object()
-        if not recipe.short_link:
-            recipe.save()
-        return Response({'short-link': request.build_absolute_uri(
-            f'/s/{recipe.short_link}'
-        )})
-
-    @action(
         detail=False,
         methods=['get'],
         permission_classes=[IsAuthenticated],
         url_path='download_shopping_cart'
     )
     def download_shopping_cart(self, request):
-        content = self.get_ingredients_list(request)
+        ingredients = self.get_ingredients_list(request)
+        content = self.format_ingredients_to_text(ingredients)
         content_bytes = content.encode('utf-8')
         file = io.BytesIO(content_bytes)
         response = FileResponse(file, content_type='text/plain')
@@ -215,7 +207,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def _add_or_remove_from_list(self, request, pk, model, serializer_class):
         recipe = self.get_object()
         serializer = serializer_class(
-            data={'recipe': recipe.id}, context={'request': request}
+            data={'recipe': recipe.id, 'user': request.user.id},
+            context={'request': request}
         )
         if request.method == 'POST':
             serializer.is_valid(raise_exception=True)
@@ -250,6 +243,19 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return self._add_or_remove_from_list(
             request, pk, Favorite, FavoriteSerializer
         )
+
+    @action(
+        detail=True,
+        methods=['get'],
+        url_path='get-link'
+    )
+    def get_link(self, request, pk=None):
+        recipe = self.get_object()
+        if not recipe.short_link:
+            recipe.save()
+        return Response({'short-link': request.build_absolute_uri(
+            f'/s/{recipe.short_link}'
+        )})
 
 
 class ShortLinkRedirectView(RedirectView):
