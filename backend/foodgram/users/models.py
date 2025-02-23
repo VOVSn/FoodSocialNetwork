@@ -1,7 +1,8 @@
-from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.db import models
+
+from foodgram import constants as c
 
 
 class FoodgramUser(AbstractUser):
@@ -9,13 +10,13 @@ class FoodgramUser(AbstractUser):
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
 
     username = models.CharField(
-        max_length=settings.NAME_MAX_LENGTH,
+        max_length=c.NAME_MAX_LENGTH,
         unique=True,
         verbose_name='Имя пользователя',
         help_text='Введите имя пользователя (буквы, цифры, ., @, +, - и _)',
         validators=[
             RegexValidator(
-                regex=settings.USERNAME_REGEX,
+                regex=c.USERNAME_REGEX,
                 message='Имя пользователя может содержать только буквы, '
                         'цифры и символы . @ + - _',
                 code='invalid_username'
@@ -28,12 +29,12 @@ class FoodgramUser(AbstractUser):
         help_text='Введите электронную почту'
     )
     first_name = models.CharField(
-        max_length=settings.NAME_MAX_LENGTH,
+        max_length=c.NAME_MAX_LENGTH,
         verbose_name='Имя',
         help_text='Введите имя пользователя'
     )
     last_name = models.CharField(
-        max_length=settings.NAME_MAX_LENGTH,
+        max_length=c.NAME_MAX_LENGTH,
         verbose_name='Фамилия',
         help_text='Введите фамилию пользователя'
     )

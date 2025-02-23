@@ -1,6 +1,5 @@
 import re
 
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.db.utils import IntegrityError
@@ -8,6 +7,7 @@ from djoser.serializers import UserSerializer as DjoserUserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
+from foodgram import constants as c
 from recipes.models import (
     Favorite, Ingredient, Recipe, RecipeIngredient, ShoppingCart, Tag
 )
@@ -117,7 +117,7 @@ class UserCreateSerializer(DjoserUserSerializer):
     username = serializers.CharField(
         required=True,
         allow_blank=False,
-        max_length=settings.NAME_MAX_LENGTH,
+        max_length=c.NAME_MAX_LENGTH,
         help_text='Введите имя пользователя (буквы, цифры, ., @, +, - и _)',
     )
     email = serializers.EmailField(
@@ -138,7 +138,7 @@ class UserCreateSerializer(DjoserUserSerializer):
         }
 
     def validate_username(self, value):
-        if not re.match(settings.USERNAME_REGEX, value):
+        if not re.match(c.USERNAME_REGEX, value):
             raise serializers.ValidationError(
                 'Имя пользователя может содержать только буквы, цифры и '
                 'символы . @ + - _'
@@ -294,9 +294,9 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         return data
 
     def validate_cooking_time(self, value):
-        if value < settings.MIN_TIME_TO_COOK:
+        if value < c.MIN_TIME_TO_COOK:
             raise serializers.ValidationError(
-                f'Время должно быть >= {settings.MIN_TIME_TO_COOK}'
+                f'Время должно быть >= {c.MIN_TIME_TO_COOK}'
             )
         return value
 
