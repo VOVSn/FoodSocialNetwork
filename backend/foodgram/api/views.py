@@ -116,11 +116,12 @@ class UserViewSet(DjoserUserViewSet):
     )
     def subscribe(self, request, id=None):
         author = get_object_or_404(User, pk=id)
+        data = {'author': author.id}
         serializer = SubscriptionCreateSerializer(
-            data={'author': author.id}, context={'request': request}
+            data=data, context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        serializer.save(subscriber=request.user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete

@@ -1,7 +1,6 @@
 import re
 
 from django.contrib.auth import get_user_model
-from django.db.utils import IntegrityError
 from djoser.serializers import UserSerializer as DjoserUserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
@@ -90,11 +89,6 @@ class SubscriptionCreateSerializer(serializers.ModelSerializer):
                 'Вы уже подписаны на этого автора.')
         return author
 
-    def create(self, validated_data):
-        user = self.context['request'].user
-        author = validated_data['author']
-        return Subscription.objects.create(subscriber=user, author=author)
-
     def to_representation(self, instance):
         request = self.context.get('request')
         return SubscriptionSerializer(
@@ -152,12 +146,7 @@ class UserCreateSerializer(DjoserUserSerializer):
         return value
 
     def create(self, validated_data):
-        try:
-            return User.objects.create_user(**validated_data)
-        except IntegrityError:
-            raise serializers.ValidationError({
-                'username': 'Имя пользователя уже занято.'
-            })
+        return User.objects.create_user(**validated_data)
 
 
 class PasswordChangeSerializer(serializers.Serializer):
