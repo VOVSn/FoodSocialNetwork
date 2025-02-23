@@ -241,16 +241,17 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         )
 
     def validate(self, data):
-        if 'ingredients' not in data or not data['ingredients']:
+        ingredients_data = data.get('ingredients')
+        if not ingredients_data:
             raise serializers.ValidationError('Ингредиенты обязательны.')
         if 'tags' not in data or not data['tags']:
             raise serializers.ValidationError('Теги обязательны.')
-        ingredients_data = data.get('ingredients')
         ingredient_ids = [
             ingredient.get('id') for ingredient in ingredients_data]
         if len(ingredient_ids) != len(set(ingredient_ids)):
             raise serializers.ValidationError(
-                'Ингредиенты не могут повторяться.')
+                'Ингредиенты не могут повторяться.'
+            )
 
         seen_ingredients = set()
         for ingredient in ingredients_data:
@@ -262,9 +263,10 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     'Количество ингредиента должно быть числом.'
                 )
-            if amount < 1:
+            if amount < c.MIN_INGR_AMOUNT:
                 raise serializers.ValidationError(
-                    'Количество ингредиента должно быть больше 0.'
+                    'Количество ингредиента должно быть >= '
+                    f'{c.MIN_INGR_AMOUNT}'
                 )
             if not Ingredient.objects.filter(id=ingredient_id).exists():
                 raise serializers.ValidationError(
