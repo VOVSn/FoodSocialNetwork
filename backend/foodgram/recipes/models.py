@@ -146,7 +146,7 @@ class RecipeIngredient(models.Model):
         verbose_name='Ингредиент',
         help_text='Выберите ингредиент'
     )
-    amount = models.FloatField(
+    amount = models.IntegerField(
         verbose_name='Количество',
         help_text='Введите количество ингредиента'
     )

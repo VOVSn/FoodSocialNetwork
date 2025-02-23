@@ -176,7 +176,7 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
     measurement_unit = serializers.ReadOnlyField(
         source='ingredient.measurement_unit'
     )
-    amount = serializers.FloatField()
+    amount = serializers.IntegerField()
 
     class Meta:
         model = RecipeIngredient
@@ -252,17 +252,10 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'Ингредиенты не могут повторяться.'
             )
-
         seen_ingredients = set()
         for ingredient in ingredients_data:
             ingredient_id = ingredient.get('id')
             amount = ingredient.get('amount')
-            try:
-                amount = float(amount)
-            except ValueError:
-                raise serializers.ValidationError(
-                    'Количество ингредиента должно быть числом.'
-                )
             if amount < c.MIN_INGR_AMOUNT:
                 raise serializers.ValidationError(
                     'Количество ингредиента должно быть >= '
@@ -273,11 +266,9 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
                     f'Ингредиент с id {ingredient_id} не существует.'
                 )
             seen_ingredients.add(ingredient_id)
-
         tags = data.get('tags')
         if len(tags) != len(set(tags)):
             raise serializers.ValidationError('Теги не могут повторяться.')
-
         return data
 
     def validate_cooking_time(self, value):
