@@ -256,6 +256,12 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         for ingredient in ingredients_data:
             ingredient_id = ingredient.get('id')
             amount = ingredient.get('amount')
+            try:
+                amount = int(amount)
+            except ValueError:
+                raise serializers.ValidationError(
+                    'Количество ингредиента должно быть числом.'
+                )
             if amount < c.MIN_INGR_AMOUNT:
                 raise serializers.ValidationError(
                     'Количество ингредиента должно быть >= '
