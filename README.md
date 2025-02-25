@@ -125,8 +125,6 @@
   python manage.py import_csv_data
   ```
 
-
-
 ### Как запустить проект в контейнерах:
 
   ```
