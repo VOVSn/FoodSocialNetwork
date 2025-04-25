@@ -15,7 +15,7 @@
 
   Рабочая версия проекта доступна по адресу:
 
-  [FOODSocialNetwork](https://foodgram.vovsn.com)
+  [FOODSocialNetwork](https://foodgram.vovsn.com) foodgram.vovsn.com
 
   API документация к проекту доступна по адресу:
 
